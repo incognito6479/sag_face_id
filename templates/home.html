@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .object_photo_td:hover {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Список посещаемости</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Основной</a></li>
+                    <li class="breadcrumb-item">Список посещаемости</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row justify-content-end align-items-center">
+                    <div class="col-md-3 p-0 m-0">
+                        <div class="form-group m-0 p-0">
+                              <select class="form-control-sm department_select_form">
+                                  <option selected disabled value="">Поиск по отделам</option>
+                                  <option value="">---</option>
+                                  {% for i in departments %}
+                                      <option
+                                      {% if department_id == i.id|stringformat:"i" %}
+                                      selected
+                                      {% endif %}
+                                      value="{{ i.id }}">{{ i.name }}</option>
+                                  {% endfor %}
+                              </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3 p-0 m-0">
+                        <div class="form-group m-0 p-0">
+                            <div class="col-md-12 mb-2">
+                               <input class="datepicker-here form-control digits datepicker_date_to"
+                               type="text" data-language="ru" data-multiple-dates-separator=", "
+                               data-position="bottom right" readonly placeholder="Поиск по дате:"
+                               value="{{ date_to|default:"" }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="{% url 'home_view' %}" method="GET">
+                            {% csrf_token %}
+                              <div class="col-md-8 ms-2">
+                                <div>
+                                  <input class="form-control" type="text"
+                                  name="name" placeholder="Поиск по Ф.И.О."  value="{{ name|default:"" }}">
+                                </div>
+                              </div>
+{#                            <input class="d-none object_status_date_from" type="text" name="date_from" value="">#}
+                            <input class="d-none object_status_date_to" type="text" name="date_to" value="">
+                            <input class="d-none object_department" type="number" name="department_id" value="">
+                            <div class="ms-3">
+                                <button type="submit" class="d-none object_filter_btn_submit"></button>
+                                <button class="btn btn-info px-2 object_filter_btn" type="button"><i class="icofont icofont-search"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            <div class="table-responsive">
+                            <div class="d-flex align-items-center justify-content-between mb-5">
+                                <div>
+                                    <h5>
+                                        Посещаемость на дату:
+                                        <b>
+                                            {% if date_to_show %}
+                                                {{ date_to_show.date }}
+                                                {% else %}
+                                                    {{ date_to.date }}
+                                            {% endif %}
+                                        </b>
+                                    </h5>
+                                </div>
+                                <div>
+                                    <h5>Количество всех сотрудников: <b>{{ employee_count }}</b></h5>
+                                </div>
+                            </div>
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">#</th>
+                          <th scope="col">ID сотрудника</th>
+                          <th scope="col">Полное имя</th>
+                          <th scope="col">Событие</th>
+                          <th scope="col">Время входа/выхода</th>
+                          <th scope="col">Отдел</th>
+                          <th scope="col">Фото</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      {% for key, value in attendances.items %}
+                        <tr>
+                            <th scope="row">
+                                {{ forloop.counter }}
+                            </th>
+                          <th scope="row">
+{#                            <a href="#">#}
+                                {{ key }}
+{#                            </a>#}
+                          </th>
+                          <td>
+                            <a href="#">
+                                <b>
+                                    {{ value.0.full_name }}
+                                </b>
+                            </a>
+                          </td>
+                          <td class="align-items-center">
+                            {% for v in value %}
+                                {{ v.check_status|default:"--" }}
+                                {% if v.check_status == 'Вход' %}
+                                    {% if v.start_time_difference == 0 %}
+                                        <span class="text-primary p-0 ms-3" style="font-size: 3vh">
+                                            <i class="icofont icofont-emo-simple-smile"></i>
+                                        </span>
+                                            {% else %}
+                                                <span class="text-danger p-0 ms-3" style="font-size: 3vh">
+                                                    <i class="icofont icofont-emo-expressionless"></i>
+                                                </span>
+                                    {% endif %}
+                                    {% elif v.check_status == 'Выход' %}
+                                        {% if v.end_time_difference == 0 %}
+                                            <span class="text-primary p-0 ms-1" style="font-size: 3vh">
+                                                <i class="icofont icofont-emo-simple-smile"></i>
+                                            </span>
+                                                {% else %}
+                                                    <span class="text-danger p-0 ms-1" style="font-size: 3vh">
+                                                        <i class="icofont icofont-emo-expressionless"></i>
+                                                    </span>
+                                        {% endif %}
+                                {% endif %}
+                                <br>
+                            {% endfor %}
+                          </td>
+                          <td>
+                            {% for v in value %}
+                                {{ v.time|default:"--" }}<br>
+                                <br>
+                            {% endfor %}
+                          </td>
+                          <td>{{ value.0.department }}</td>
+                          <td>
+                                <button class="btn-sm btn-primary" type="button" data-bs-toggle="modal"
+                                data-bs-target="#exampleModalCenter_{{ key }}">
+                                    <i class="fa fa-file-o" style="font-size: 2vh"></i>
+                                </button>
+                                <div class="modal fade" id="exampleModalCenter_{{ key }}" tabindex="-1"
+                                role="dialog" aria-labelledby="exampleModalCenter" aria-hidden="true">
+                                  <div class="modal-dialog modal-dialog-centered" role="document">
+                                    <div class="modal-content">
+                                      <div class="modal-header">
+                                        <h5 class="modal-title">Фото</h5>
+                                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                                      </div>
+                                      <div class="modal-body text-center">
+                                        <img style="max-width: 50vh; max-height: 50vh;" src="media/{{ value.0.img }}" alt="employee image"/>
+                                      </div>
+{#                                      <div class="modal-footer">#}
+{#                                        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button>#}
+{#                                        <button class="btn btn-primary" type="button">Save changes</button>#}
+{#                                      </div>#}
+                                    </div>
+                                  </div>
+                                </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                        </div>
+                      </div>
+{#                      {% if objects %}#}
+                        <div class="my-3 float-end">
+                            <nav aria-label="Page navigation example">
+                              <ul class="pagination pagination-primary">
+                              {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                        <span aria-hidden="true">
+                                            « Предыдущий
+                                        </span>
+                                        <span class="sr-only">
+                                            Previous
+                                        </span>
+                                    </a>
+                                </li>
+                               {% endif %}
+                                <li class="page-item">
+                                    <a class="page-link" href="javascript:void(0)">
+                                        Таблица {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                                    </a>
+                                </li>
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                            <span aria-hidden="true">
+                                                Следующий »
+                                            </span>
+                                            <span class="sr-only">
+                                                Next
+                                            </span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                              </ul>
+                            </nav>
+                        </div>
+{#                      {% endif %}#}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+         $(document).ready(function(){
+            $('.object_filter_btn').on('click',function(){
+                $('.object_status_date_to').val($('.datepicker_date_to').val())
+                $('.object_department').val($('.department_select_form').val())
+                $('.object_filter_btn_submit').click()
+            })
+         })
+    </script>
+{% endblock extra_js %}

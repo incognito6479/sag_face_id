@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .object_box {
+        transition: transform 0.2s;
+    }
+
+    .object_box:hover {
+        transform: scale(1.05);
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Список отделов</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">Отделы</li>
+                    <li class="breadcrumb-item">Список отделов</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row align-items-center justify-content-end">
+                    <div class="col-md-6 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="" method="GET">
+                            {% csrf_token %}
+                              <div class="col-md-3 ms-2">
+                                <div>
+                                  <input class="form-control" type="text"
+                                  name="name" placeholder="Названия" value="{{ name|default:"" }}">
+                                </div>
+                              </div>
+                            <div class="ms-3">
+                                <button class="btn btn-info px-2"
+                                type="submit">
+                                    <i class="icofont icofont-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            {% for department in departments %}
+                              <div class="col-xxl-4 col-lg-6 object_box height-50">
+                                <a href="">
+                                    <div class="project-box">
+                                        <span class="badge badge-primary">
+                                            ---
+                                        </span>
+                                      <h6>{{ department.name }}</h6>
+                                      <div class="media text-center">
+                                        <div class="media-body">
+                                            ---
+                                        </div>
+                                      </div>
+                                    </div>
+                                </a>
+                              </div>
+                            {% endfor %}
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+    </script>
+{% endblock extra_js %}
