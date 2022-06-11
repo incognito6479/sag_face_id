@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Сменный рабочий</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Основной</a></li>
+                    <li class="breadcrumb-item">Сменный рабочий</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            <div class="table-responsive">
+                                <div class="d-flex align-items-center justify-content-between mb-5">
+                                    <div>
+                                        <h5>
+                                            Это отделы работающие по сменам
+                                        </h5>
+                                    </div>
+                                </div>
+                                <table class="table">
+                                  <thead>
+                                    <tr>
+                                      <th scope="col">#</th>
+                                      <th scope="col">Отдел</th>
+                                      <th scope="col">Работает по стенам</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                  {% for shift_time_worker in shift_time_workers %}
+                                    <tr>
+                                        <th scope="row">
+                                            {{ forloop.counter }}
+                                        </th>
+                                      <td>{{ shift_time_worker.department }}</td>
+                                      <td>
+                                          {% if shift_time_worker.shift_time %}
+                                              <i class="fa fa-check"></i>
+                                          {% endif %}
+                                      </td>
+                                    </tr>
+                                      {% empty %}
+                                      <tr>
+                                        <td colspan="3" class="text-center">
+                                            <p>Нет отделов</p>
+                                        </td>
+                                      </tr>
+                                  {% endfor %}
+                                  </tbody>
+                                </table>
+                            </div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+    </script>
+{% endblock extra_js %}

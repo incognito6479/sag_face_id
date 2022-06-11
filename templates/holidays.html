@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Список выходных</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Основной</a></li>
+                    <li class="breadcrumb-item">Список выходных</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row justify-content-end align-items-center">
+                    <div class="col-md-4 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="{% url 'calendar_view' %}" method="GET">
+                            {% csrf_token %}
+                              <div class="col-md-8 ms-2">
+                                <div>
+                                    <select class="form-control" required name="month">
+                                        <option value="" selected disabled>Поиск по месяцам</option>
+                                        <option value="01">Январь</option>
+                                        <option value="02">Февраль</option>
+                                        <option value="03">Март</option>
+                                        <option value="04">Апрель</option>
+                                        <option value="05">Май</option>
+                                        <option value="06">Июнь</option>
+                                        <option value="07">Июль</option>
+                                        <option value="08">Август</option>
+                                        <option value="09">Сентябрь</option>
+                                        <option value="10">Октябрь</option>
+                                        <option value="11">Ноябрь</option>
+                                        <option value="12">Декабрь</option>
+                                    </select>
+                                </div>
+                              </div>
+                            <div class="ms-3">
+                                <button class="btn btn-info px-2" type="submit"><i class="icofont icofont-search"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            <div class="table-responsive">
+                                <table class="table">
+                                  <thead>
+                                    <tr>
+                                      <th scope="col">#</th>
+                                      <th scope="col">Дата от:</th>
+                                      <th scope="col">Дата до:</th>
+                                      <th scope="col">Разница дней</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {% for i in holidays %}
+                                        <tr>
+                                            <td scope="row">{{ forloop.counter }}</td>
+                                            <td>{{ i.date_from }}</td>
+                                            <td>{{ i.date_to|default:"-" }}</td>
+                                            <td>{{ i.difference }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr class="text-center">
+                                            <td colspan="4">
+                                                Нет выходных
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                            </div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+    </script>
+{% endblock extra_js %}

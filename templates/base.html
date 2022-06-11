@@ -17,27 +17,44 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&amp;display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap" rel="stylesheet">
     <!-- Font Awesome-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/fontawesome.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/fontawesome.css' %}">
     <!-- ico-font-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/icofont.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/icofont.css' %}">
     <!-- Themify icon-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/themify.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/themify.css' %}">
     <!-- Flag icon-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/flag-icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/flag-icon.css' %}">
     <!-- Feather icon-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/feather-icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/feather-icon.css' %}">
     <!-- Plugins css start-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/date-picker.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/datatables.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/datatable-extension.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/date-picker.css' %}">
     <!-- Plugins css Ends-->
     <!-- Bootstrap css-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/bootstrap.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/bootstrap.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/select2.css' %}">
     <!-- App css-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/style.css' %}">
-    <link id="color" rel="stylesheet" href="{% static './assets/css/color-1.css' %}" media="screen">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/style.css' %}">
+    <link id="color" rel="stylesheet" href="{% static 'assets/css/color-1.css' %}" media="screen">
     <!-- Responsive css-->
-    <link rel="stylesheet" type="text/css" href="{% static './assets/css/responsive.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/responsive.css' %}">
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+    </script>
     {% block extra_css %}
     {% endblock %}
   </head>
@@ -55,12 +72,24 @@
       <div class="page-main-header">
         <div class="main-header-right row m-0">
           <div class="main-header-left">
-            <div class="logo-wrapper"><a href="index.html"><img class="img-fluid" src="{% static 'assets/sag_logo.png' %}" alt=""></a></div>
-            <div class="dark-logo-wrapper"><a href="index.html"><img class="img-fluid" src="{% static 'assets/sag_logo.png' %}" alt=""></a></div>
+            <div class="logo-wrapper"><a href="/"><img class="img-fluid" src="{% static 'assets/sag_logo.png' %}" alt=""></a></div>
+            <div class="dark-logo-wrapper"><a href="/"><img class="img-fluid" src="{% static 'assets/sag_logo.png' %}" alt=""></a></div>
             <div class="toggle-sidebar"><i class="status_toggle middle" data-feather="align-center" id="sidebar-toggle"></i></div>
           </div>
           <div class="nav-right col pull-right right-menu p-0">
             <ul class="nav-menus">
+                <li class="text-left">
+                    <div>
+                        {{ request.user }}
+                    </div>
+                </li>
+                {% if perms.faceapp.can_add_csv_importer %}
+                    <li class="text-left">
+                        <div>
+                            <a href="{% url 'importer_view' %}" class="btn btn-primary">Импортировать</a>
+                        </div>
+                    </li>
+                {% endif %}
               <li><a class="text-dark" href="#!" onclick="javascript:toggleFullScreen()"><i data-feather="maximize"></i></a></li>
               <li>
                 <div class="mode"><i class="fa fa-moon-o"></i></div>
@@ -98,6 +127,7 @@
                     </a>
                     <ul class="nav-submenu menu-content">
                       <li><a href="{% url 'home_view' %}">Список Посещаемости</a></li>
+                      <li><a href="{% url 'shift_time_view' %}">Сменный рабочий</a></li>
                     </ul>
                   </li>
                   <li class="dropdown">
@@ -109,68 +139,24 @@
                       <li><a href="{% url 'department_list_view' %}">Список всех отделов</a></li>
                     </ul>
                   </li>
-                  <li class="dropdown">
+                    <li class="dropdown">
                     <a class="nav-link menu-title" href="javascript:void(0)">
-                        <i data-feather="layout"></i>
-                        <span>Склады</span>
+                        <i class="fa fa-calendar me-3"></i>
+                        <span>Календарь</span>
                     </a>
                     <ul class="nav-submenu menu-content">
-{#                        <li><a href="{% url 'warehouse_pto_plan_list_view' %}">Планы</a></li>#}
-{#                      <li><a href="{% url 'warehouse_list_view' %}">Список складов</a></li>#}
+                      <li><a href="{% url 'calendar_view' %}">Выходные</a></li>
+                      <li><a href="{% url 'vacation_view' %}">Отпуски</a></li>
                     </ul>
                   </li>
-                  <li class="dropdown">
+                    <li class="dropdown">
                     <a class="nav-link menu-title" href="javascript:void(0)">
-                        <i data-feather="folder-plus"></i>
-                        <span>
-                            Бухгалтерия
-                        </span>
+                        <i class="icofont icofont-chart-line-alt me-3"></i>
+                        <span>Статистика</span>
                     </a>
                     <ul class="nav-submenu menu-content">
-                      <li><a href="#">Scrollable</a></li>
-{#                      <li><a class="submenu-title" href="javascript:void(0)">Timeline<span class="sub-arrow"><i class="fa fa-chevron-right"></i></span></a>#}
-{#                        <ul class="nav-sub-childmenu submenu-content">#}
-{#                          <li><a href="timeline-v-1.html">Timeline 1</a></li>#}
-{#                          <li><a href="timeline-v-2.html">Timeline 2</a></li>#}
-{#                        </ul>#}
-{#                      </li>#}
-                    </ul>
-                  </li>
-                  {% if request.user.user_type == "director" or request.user.is_superuser %}
-                      <li class="dropdown">
-                          <a class="nav-link menu-title" href="javascript:void(0)">
-                              <i data-feather="edit-3"></i>
-                              <span>
-                                Директор
-                              </span>
-                          </a>
-                        <ul class="nav-submenu menu-content">
-                          <li><a href="#">Поставщики</a></li>
-                          <li><a href="#">Отчеты</a></li>
-    {#                      <li><a href="{% url 'pto_plan_list_view' %}">Планы</a></li>#}
-                        </ul>
-                      </li>
-                  {% endif %}
-                  <li class="dropdown">
-                      <a class="nav-link menu-title" href="javascript:void(0)">
-                          <i data-feather="cloud-drizzle"></i>
-                          <span>
-                            Снабжения
-                          </span>
-                      </a>
-                    <ul class="nav-submenu menu-content">
-{#                      <li><a href="{% url 'pto_plan_list_view' %}">Планы</a></li>#}
-                    </ul>
-                  </li>
-                  <li class="dropdown">
-                      <a class="nav-link menu-title" href="javascript:void(0)">
-                          <i data-feather="command"></i>
-                          <span>
-                            Поставщики
-                          </span>
-                      </a>
-                    <ul class="nav-submenu menu-content">
-                      <li><a href="#">Flag icon</a></li>
+                      <li><a href="{% url 'statistics_employee_view' %}">Сотрудники</a></li>
+                      <li><a href="{% url 'statistics_department_view' %}">Отделы</a></li>
                     </ul>
                   </li>
                  </ul>
@@ -208,40 +194,17 @@
     <!-- Bootstrap js-->
     <script src="{% static 'assets/js/bootstrap/popper.min.js' %}"></script>
     <script src="{% static 'assets/js/bootstrap/bootstrap.min.js' %}"></script>
+
+    <script src="{% static 'assets/js/select2/select2.full.min.js' %}"></script>
+    <script src="{% static 'assets/js/select2/select2-custom.js' %}"></script>
     <!-- Plugins JS start-->
     <!-- Plugins JS Ends-->
-    <script src="{% static './assets/js/datepicker/date-picker/datepicker.js' %}"></script>
-    <script src="{% static './assets/js/datepicker/date-picker/datepicker.en.js' %}"></script>
-    <script src="{% static './assets/js/datepicker/date-picker/datepicker.custom.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatables/datatable.custom.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.buttons.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/jszip.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/buttons.colVis.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/pdfmake.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/vfs_fonts.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.autoFill.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.select.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/buttons.bootstrap4.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/buttons.html5.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/buttons.print.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.bootstrap4.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.responsive.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/responsive.bootstrap4.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.keyTable.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.colReorder.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.fixedHeader.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.rowReorder.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/dataTables.scroller.min.js' %}"></script>
-    <script src="{% static './assets/js/datatable/datatable-extension/custom.js' %}"></script>
-    <script src="{% static './assets/js/tooltip-init.js' %}"></script>
-    <!-- Theme js-->
-{#    <script src="{% static './assets/js/theme-customizer/customizer.js' %}"></script>#}
+    <script src="{% static 'assets/js/datepicker/date-picker/datepicker.js' %}"></script>
+    <script src="{% static 'assets/js/datepicker/date-picker/datepicker.en.js' %}"></script>
+    <script src="{% static 'assets/js/datepicker/date-picker/datepicker.custom.js' %}"></script>
+    <script src="{% static 'assets/js/tooltip-init.js' %}"></script>
     <script src="{% static 'assets/js/script.js' %}"></script>
-    <!-- login js-->
-    <!-- Plugin used-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
     {% block extra_js %}
-        <script>
-        </script>
     {% endblock %}
 </html>

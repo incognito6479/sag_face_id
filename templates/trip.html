@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Список командировок</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">Отделы</li>
+                    <li class="breadcrumb-item">Список отделов</li>
+                    <li class="breadcrumb-item">Список командировок</li>
+                  </ol>
+                </div>
+                  {% if perms.faceapp.can_add_business_trip and request.user.department_id == department_id %}
+                      <div class="col-md-6 text-end">
+                          <button class="btn btn-primary" type="button" data-bs-toggle="modal"
+                                  data-original-title="test" data-bs-target="#exampleModal">
+                              Добавить командировку
+                          </button>
+                      </div>
+                  {% endif %}
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row justify-content-end align-items-center">
+                    <div class="col-md-4 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="" method="GET">
+                            {% csrf_token %}
+                              <div class="col-md-8 ms-2">
+                                <div>
+                                    <select class="form-control" required name="employee_id">
+                                        <option value="" selected disabled>Поиск по сотрудникам</option>
+                                        {% for i in employees %}
+                                            <option value="{{ i.employee_id }}">{{ i.employee__full_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                              </div>
+                            <div class="ms-3">
+                                <button class="btn btn-info px-2" type="submit"><i class="icofont icofont-search"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            <div class="table-responsive">
+                                <table class="table">
+                                  <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Сотрудник</th>
+                                        <th scope="col">Дата от:</th>
+                                        <th scope="col">Дата до:</th>
+                                        <th scope="col">Количество дней</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {% for i in business_trips %}
+                                        <tr>
+                                            <td scope="row">{{ forloop.counter }}</td>
+                                            <td>{{ i.employee.full_name }}</td>
+                                            <td>{{ i.date_from|default:"-" }}</td>
+                                            <td>{{ i.date_to|default:"-" }}</td>
+                                            <td>{{ i.difference|default:"-" }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr class="text-center">
+                                            <td colspan="5">
+                                                Нет командировки
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                            </div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <form action="{% url 'business_trip_view' department_id %}" method="POST" id="business_trip_form">
+                      {% csrf_token %}
+                    <div class="form-group m-0 p-0">
+                        <div class="col-md-12 mb-2">
+                         <input class="datepicker-here form-control digits" name="date_from"
+                         type="text" data-language="ru" data-multiple-dates-separator=", "
+                         data-position="bottom right" required placeholder="Дата от:">
+                        </div>
+                    </div>
+                    <div class="form-group m-0 p-0">
+                        <div class="col-md-12 mb-2">
+                         <input class="datepicker-here form-control digits" name="date_to"
+                         type="text" data-language="ru" data-multiple-dates-separator=", "
+                          data-position="bottom right" required placeholder="Дата до:">
+                     </div>
+                    </div>
+                      <div class="form-group m-0 p-0">
+                          <select class="js-example-placeholder-multiple col-sm-12 employee_select_2_id"
+                                  multiple="multiple" name="employees" required>
+                              {% for i in employees %}
+                                <option value="{{ i.id }}">{{ i.full_name }}</option>
+                              {% endfor %}
+                          </select>
+                            <input type="hidden" class="employee_ids_from_select2" name="employee_ids_from_select2" value="">
+                      </div>
+                  </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary business_trip_form_btn" type="submit" form="business_trip_form">Добавить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        $(document).ready(function(){
+            $('.business_trip_form_btn').on('click', function() {
+                $('.employee_ids_from_select2').val($('.employee_select_2_id').val())
+            })
+        })
+    </script>
+{% endblock extra_js %}

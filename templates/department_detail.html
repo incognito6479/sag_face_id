@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .object_box {
+        transition: transform 0.2s;
+    }
+
+    .object_box:hover {
+        transform: scale(1.05);
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-md-6">
+                  <h3>Отдел {{ department.name }}</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">Отделы</li>
+                    <li class="breadcrumb-item">Список отделов</li>
+                    <li class="breadcrumb-item">{{ department.name }}</li>
+                  </ol>
+                </div>
+                  <div class="col-md-6 text-end">
+                      <a href="{% url 'business_trip_view' department.id %}" class="btn btn-primary">Список командировок</a>
+                  </div>
+              </div>
+            </div>
+          </div>
+
+            <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row align-items-start justify-content-between">
+                    <div class="col-md-6 p-0 m-0">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">
+                                            Отдел
+                                        </th>
+                                        <th scope="col">
+                                            {{ department.name }}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th scope="col">
+                                            Количество сотрудников
+                                        </th>
+                                        <th scope="col">
+                                            {{ employees_count }}
+                                        </th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                      {% if percentage == '1' %}
+                          <div class="col-md-6 p-0 m-0">
+                              <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
+                          </div>
+                      {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row align-items-center justify-content-end">
+                    <div class="col-md-12 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="" method="GET">
+                            {% csrf_token %}
+                              <div class="col-md-3 ms-2">
+                                <div>
+                                  <input class="form-control" type="text"
+                                  name="name" placeholder="Писк по Ф.И.О." value="{{ name|default:"" }}">
+                                </div>
+                              </div>
+                            <div class="ms-3">
+                                <button class="btn btn-info px-2"
+                                type="submit">
+                                    <i class="icofont icofont-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                           <div class="table-responsive">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">#</th>
+                          <th scope="col">ID сотрудника</th>
+                          <th scope="col">Полное имя</th>
+                          <th scope="col">Дата рождения</th>
+                          <th scope="col">Рабочее время</th>
+                          <th scope="col">Статус</th>
+                          <th scope="col">Фото</th>
+                          <th scope="col">Подробнее</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for employee in employees %}
+                            <tr>
+                              <th scope="row">{{ forloop.counter }}</th>
+                              <th scope="row">{{ employee.person_id|default:"-" }}</th>
+                              <td>{{ employee.full_name }}</td>
+                              <td>{% if employee.birth_day %} {{ employee.birth_day }} года {% else %} -- {% endif %}</td>
+                              <td>{{ employee.working_hours }}</td>
+                              <td class="text-primary">
+                                  {% if employee.status %}
+                                      <i class="fa fa-check"></i>
+                                  {% endif %}
+                              </td>
+                              <td>
+                                    <button class="btn-sm btn-primary" type="button" data-bs-toggle="modal"
+                                    data-bs-target="#exampleModalCenter_{{ employee.id }}">
+                                        <i class="fa fa-picture-o"></i>
+                                    </button>
+                                    <div class="modal fade" id="exampleModalCenter_{{ employee.id }}" tabindex="-1"
+                                    role="dialog" aria-labelledby="exampleModalCenter" aria-hidden="true">
+                                      <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                          <div class="modal-header">
+                                            <h5 class="modal-title">Фото</h5>
+                                            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                                          </div>
+                                          <div class="modal-body text-center">
+                                            <img style="max-width: 50vh; max-height: 50vh;" src="{{ employee.image.url }}" alt="employee image"/>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                              </td>
+                              <td>
+                                  <a href="{% url 'employee_detail_view' employee.id %}" class="btn-sm btn-primary py-2">
+                                      <i class="fa fa-eye"></i>
+                                  </a>
+                              </td>
+                            </tr>
+                            {% empty %}
+                            <tr class="text-center">
+                                <td colspan="8">Нет сотрудников</td>
+                            </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        $(document).ready(function(){
+            {% if percentage == '1' %}
+                let xValues = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+                let yValues = [];
+                let barColors = [];
+                new Chart("myChart", {
+                  type: "bar",
+                  data: {
+                    labels: xValues,
+                    datasets: [{
+                      backgroundColor: barColors,
+                      data: yValues
+                    }]
+                  },
+                  options: {
+                    legend: {display: false},
+                    scales: {
+                        yAxes: [{ticks: {min: 0, max:100}}],
+                    },
+                    title: {
+                      display: true,
+                      text: "Ежемесячный процент посещаемости этого отдела"
+                    }
+                  }
+                });
+                $.ajax({
+                    url: "{% url 'department_percentage_ajax' %}",
+                    type: "POST",
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    },
+                    data: JSON.stringify({'department_id': "{{ department_id }}"}),
+                    success: function(e) {
+                        let percent_from_db = JSON.parse(e)
+                        for(let key in percent_from_db) {
+                            if(percent_from_db[key] >= 90 && percent_from_db[key] <= 100) {
+                                barColors.push('green')
+                            } else if(percent_from_db[key] >= 70 && percent_from_db[key] <= 89) {
+                                barColors.push('yellow')
+                            } else {
+                                barColors.push('red')
+                            }
+                            yValues.push(percent_from_db[key])
+                        }
+                        new Chart("myChart", {
+                          type: "bar",
+                          data: {
+                            labels: xValues,
+                            datasets: [{
+                              backgroundColor: barColors,
+                              data: yValues
+                            }]
+                          },
+                          options: {
+                            legend: {display: false},
+                            scales: {
+                                yAxes: [{ticks: {min: 0, max:100}}],
+                            },
+                            title: {
+                              display: true,
+                              text: "Ежемесячный процент посещаемости этого отдела"
+                            }
+                          }
+                        });
+                    },
+                    error: function(error) {
+                        console.log("ERROR", error)
+                    }
+                })
+            {% endif %}
+        });
+    </script>
+{% endblock extra_js %}

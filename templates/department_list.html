@@ -65,10 +65,10 @@
                         <div class="row">
                             {% for department in departments %}
                               <div class="col-xxl-4 col-lg-6 object_box height-50">
-                                <a href="">
+                                <a href="{% url 'department_detail_view' department.id %}">
                                     <div class="project-box">
                                         <span class="badge badge-primary">
-                                            ---
+                                            {{ department.employee_number }}
                                         </span>
                                       <h6>{{ department.name }}</h6>
                                       <div class="media text-center">
@@ -79,6 +79,10 @@
                                     </div>
                                 </a>
                               </div>
+                                {% empty %}
+                                    <div class="text-center">
+                                        <p>Нет отделов</p>
+                                    </div>
                             {% endfor %}
                         </div>
                       </div>

@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .object_box {
+        transition: transform 0.2s;
+    }
+
+    .object_box:hover {
+        transform: scale(1.05);
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Отдел {{ department.name }}</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">Отделы</li>
+                    <li class="breadcrumb-item">Список отделов</li>
+                    <li class="breadcrumb-item">{{ department.name }}</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+
+            <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row align-items-start justify-content-between">
+                    <div class="col-md-9 p-0 m-0">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">ID сотрудника</th>
+                                        <th scope="col" class="text-end">{{ employee.person_id|default:"--" }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Номер карты</th>
+                                        <th scope="col" class="text-end">{{ employee.card_number|default:"--" }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <th scope="col">Полное имя</th>
+                                        <th scope="col" class="text-end">{{ employee.full_name|default:"--" }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Отдел</th>
+                                        <th scope="col" class="text-end">{{ employee.department|default:"--" }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Дата рождения</th>
+                                        <th scope="col" class="text-end">
+                                            {% if employee.birth_day %}
+                                                {{ employee.birth_day }} года
+                                            {% else %}
+                                                --
+                                            {% endif %}
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Рабочее время</th>
+                                        <th scope="col" class="text-end">{{ employee.working_hours|default:"--" }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Статус</th>
+                                        <th scope="col" class="text-end text-primary">
+                                            {% if employee.status %}
+                                                  <i class="fa fa-check"></i>
+                                              {% endif %}
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <th scope="col">Подробно</th>
+                                        <th scope="col" class="text-end text-primary">
+                                            {{ employee.comment|default:"---" }}
+                                        </th>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                      <div class="col-md-3 p-0 m-0">
+                          <div class="text-end">
+                              <img style="max-width: 30vh; max-height: 55vh;" src="{{ employee.image.url }}" alt="employee_image">
+                          </div>
+                      </div>
+                    {% if percent %}
+                      <div class="mt-5 mx-auto">
+                          <div class="mx-auto">
+                              <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
+                          </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row justify-content-between align-items-center">
+                    <div class="col-md-8 p-0 m-0">
+                        <h5>История посещаемости этого сотрудника</h5>
+                    </div>
+                    <div class="col-md-4 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="{% url 'employee_detail_view' employee.id %}" method="GET">
+                            {% csrf_token %}
+                            <div class="col-md-6 mb-2 me-3">
+                               <input class="datepicker-here form-control digits datepicker_date_to"
+                               type="text" data-language="ru" data-multiple-dates-separator=", "
+                               data-position="bottom right" readonly placeholder="Дата от:"
+                               value="" name="date_from" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                               <input class="datepicker-here form-control digits datepicker_date_to"
+                               type="text" data-language="ru" data-multiple-dates-separator=", "
+                               data-position="bottom right" readonly placeholder="Дата до:"
+                               value="" name="date_to" required>
+                            </div>
+{#                            <input class="d-none object_status_date_from" type="text" name="date_from" value="">#}
+                            <div class="ms-3">
+                                <button class="btn btn-info px-2 object_filter_btn" type="submit">
+                                    <i class="icofont icofont-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                           <div class="table-responsive">
+                                <div class="d-flex align-items-center justify-content-between mb-5">
+                                    <div>
+                                        <h5>
+                                            Посещаемость на дату:
+                                            <b>
+                                                {% if date_to_show %}
+                                                    {{ date_to_show.date|default:"" }}
+                                                    {% else %}
+                                                        {{ date_from.date|default:"" }}
+                                                {% endif %}
+                                            </b>
+                                            -
+                                            <b>
+                                                {% if date_to_show %}
+                                                    {{ date_to_show.date|default:"" }}
+                                                    {% else %}
+                                                        {{ date_to.date|default:"" }}
+                                                {% endif %}
+                                            </b>
+                                        </h5>
+                                    </div>
+                                </div>
+                                <table class="table">
+                                  <thead>
+                                    <tr>
+                                      <th scope="col">#</th>
+{#                                      <th scope="col">ID сотрудника</th>#}
+                                      <th scope="col">Событие</th>
+                                      <th scope="col">Время входа/выхода</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                  {% for key, value in attendances.items %}
+                                    <tr>
+                                        <th scope="row">
+                                            {{ forloop.counter }}
+                                        </th>
+{#                                      <th scope="row">{{ key }}</th>#}
+                                      <td class="align-items-center">
+                                        {% for v in value %}
+                                            {{ v.check_status|default:"--" }}
+                                            {% if v.check_status == 'Вход' %}
+                                                {% if v.start_time_difference == 0 %}
+                                                    <span class="text-primary p-0 ms-3" style="font-size: 3vh">
+                                                        <i class="icofont icofont-emo-simple-smile"></i>
+                                                    </span>
+                                                        {% else %}
+                                                            <span class="text-danger p-0 ms-3" style="font-size: 3vh">
+                                                                <i class="icofont icofont-emo-expressionless"></i>
+                                                            </span>
+                                                {% endif %}
+                                                {% elif v.check_status == 'Выход' %}
+                                                    {% if v.end_time_difference == 0 %}
+                                                        <span class="text-primary p-0 ms-1" style="font-size: 3vh">
+                                                            <i class="icofont icofont-emo-simple-smile"></i>
+                                                        </span>
+                                                            {% else %}
+                                                                <span class="text-danger p-0 ms-1" style="font-size: 3vh">
+                                                                    <i class="icofont icofont-emo-expressionless"></i>
+                                                                </span>
+                                                    {% endif %}
+                                            {% endif %}
+                                            <br>
+                                        {% endfor %}
+                                      </td>
+                                      <td>
+                                        {% for v in value %}
+                                            {{ v.time|default:"--" }}<br>
+                                            <br>
+                                        {% endfor %}
+                                      </td>
+                                    </tr>
+                                      {% empty %}
+                                      <tr>
+                                        <td colspan="4" class="text-center">
+                                            <p>Нет посещаемости</p>
+                                        </td>
+                                      </tr>
+                                  {% endfor %}
+                                  </tbody>
+                                </table>
+                            </div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+          <!-- Container-fluid Ends-->
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        $(document).ready(function(){
+            let xValues = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            let yValues = [];
+            let barColors = [];
+            let percent_from_db = {{ percent }};
+            for(let key in percent_from_db) {
+                if(percent_from_db[key] >= 90 && percent_from_db[key] <= 100) {
+                    barColors.push('green')
+                } else if(percent_from_db[key] >= 70 && percent_from_db[key] <= 89) {
+                    barColors.push('yellow')
+                } else {
+                    barColors.push('red')
+                }
+                yValues.push(percent_from_db[key])
+            }
+
+            new Chart("myChart", {
+              type: "bar",
+              data: {
+                labels: xValues,
+                datasets: [{
+                  backgroundColor: barColors,
+                  data: yValues
+                }]
+              },
+              options: {
+                legend: {display: false},
+                scales: {
+                  yAxes: [{ticks: {min: 0, max:100}}],
+                },
+                title: {
+                    display: true,
+                    text: "Ежемесячный процент посещаемости этого сотрудника на текущий год"
+                }
+              }
+            });
+        })
+    </script>
+{% endblock extra_js %}

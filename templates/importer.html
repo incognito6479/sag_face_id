@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Импортировать</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            <form method="POST" action="{% url 'importer_view' %}" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="col">
+                                  <div class="mb-3 row">
+                                    <h5 class="mb-3">
+                                        Дата последнего импортированного объекта:
+                                        {{ last_time_visit|default:"Пока нет импортированного объекта" }}
+                                    </h5>
+                                    <label class="col-sm-3 col-form-label">Импортировать (.csv)</label>
+                                    <div class="col-sm-9">
+                                      <input class="form-control" type="file" name="importer_csv" required>
+                                    </div>
+                                      <p class="text-danger text-end my-4">{{ file_error }}</p>
+                                  </div>
+                                </div>
+                                <div class="col m-3">
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary">Импортировать</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        $(document).ready(function(){
+            let importer_check = "{{ importer }}";
+            if(importer_check === 'ok') {
+                alert('Файл загружен, изменения будет доступен через несколько минут')
+            }
+        })
+    </script>
+{% endblock extra_js %}
