@@ -5,14 +5,14 @@ from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser
 )
 
-
+"""
+When Creating a simple User use manage.py createsuperuser and remove is_superuser is_staff
+"""
 class UserManager(BaseUserManager):
     def create_user(self, username, password=None):
         if not username:
             raise ValueError('Users must have an username')
-
         user = self.model(username=username)
-
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -26,7 +26,9 @@ class UserManager(BaseUserManager):
         u.save(using=self._db)
         return u
 
-
+"""
+When Creating a simple User use manage.py createsuperuser and remove is_superuser is_staff
+"""
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(verbose_name='Username', max_length=255, unique=True)
     department = models.ForeignKey('faceapp.Department', null=True, blank=True, on_delete=models.PROTECT)
@@ -37,11 +39,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'username'
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.password = make_password(self.password)
-        super(User, self).save(**kwargs)
 
 
 class Department(models.Model):
