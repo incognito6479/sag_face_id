@@ -1,9 +1,11 @@
 from django.urls import path
+from django.contrib import admin
 from faceapp.views import LoginView, HomeView, LogoutView, DepartmentListView, DepartmentDetailView, EmployeeDetail, \
     ImporterView, ShiftTimeWorkers, CalendarListView, VacationListView, get_department_percentage_for_view, BusinessTripView, \
     StatisticsEmployeeTemplateView, StatisticsDepartmentTemplateView
 
 urlpatterns = [
+    path('admin/', admin.site.urls, name="django_admin_url"),
     path('login', LoginView.as_view(), name='login_view'),
     path('logout', LogoutView.as_view(), name='logout_view'),
     path('', HomeView.as_view(), name='home_view'),

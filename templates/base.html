@@ -78,6 +78,13 @@
           </div>
           <div class="nav-right col pull-right right-menu p-0">
             <ul class="nav-menus">
+{#                {% if request.user.is_superuser %}#}
+{#                    <li class="text-left">#}
+{#                        <div>#}
+{#                            <a href="{% url 'django_admin_url' %}" class="btn btn-primary">Админ панель</a>#}
+{#                        </div>#}
+{#                    </li>#}
+{#                {% endif %}#}
                 <li class="text-left">
                     <div>
                         {{ request.user }}
