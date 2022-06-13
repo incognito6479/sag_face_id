@@ -184,8 +184,10 @@ class EmployeeDetail(LoginRequiredMixin, DetailView):
         context = super(EmployeeDetail, self).get_context_data(**kwargs)
         attendances = Attendance.objects.filter(user_id=self.kwargs['pk'])
         if self.request.GET.get('date_to') and self.request.GET.get('date_from'):
-            context['date_to'] =  datetime.strptime(self.request.GET.get('date_to'), "%Y-%M-%d")
-            context['date_from'] =  datetime.strptime(self.request.GET.get('date_from'), "%Y-%M-%d")
+            print(self.request.GET.get('date_from'), self.request.GET.get('date_to'))
+            context['date_to'] =  datetime.fromisoformat(self.request.GET.get('date_to'))
+            context['date_from'] =  datetime.fromisoformat(self.request.GET.get('date_from'))
+            print(context['date_from'], context['date_to'])
             attendances = attendances.filter(time__range=(self.request.GET.get('date_from'), self.request.GET.get('date_to')))
         else:
             context['date_to_show'] = datetime.today() - timedelta(days=7)
