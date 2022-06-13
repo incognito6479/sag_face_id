@@ -256,13 +256,16 @@ def save_importer_csv_to_attendance(request):
                     f"{card_number_person_id_need_update[-1][3]} {card_number_person_id_need_update[-1][4]}")
     attendance_bulk_create = []
     for row in card_number_person_id_need_update:
-        attendance_bulk_create.append(
-            Attendance(
-                user_id=row[-1],
-                check_status=row[9],
-                time=f"{row[3]} {row[4]}"
+        try:
+            attendance_bulk_create.append(
+                Attendance(
+                    user_id=row[-1],
+                    check_status=row[9],
+                    time=f"{row[3]} {row[4]}"
+                )
             )
-        )
+        except:
+            pass
     if attendance_bulk_create:
         Attendance.objects.bulk_create(attendance_bulk_create)
     return
