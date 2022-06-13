@@ -264,9 +264,12 @@ class ImporterView(LoginRequiredMixin, PermissionRequiredMixin, View):
             os.remove("media/attendance/importer.csv")
         os.path.join(settings.MEDIA_ROOT, default_storage.save('attendance/importer.csv', ContentFile(file.read())))
         importer_attendance(request)
+        last_updated_time = CsvImporter.objects.all().order_by('id')
+        if last_updated_time:
+            last_updated_time = last_updated_time.last().last_updated_time
         context = {
             'importer': 'ok',
-            'last_time_visit': CsvImporter.objects.all().order_by('id').last().last_updated_time
+            'last_time_visit': last_updated_time
         }
         return render(request, 'templates/importer.html', context)
 
