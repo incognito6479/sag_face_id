@@ -11,7 +11,7 @@ admin.site.register(User)
 @admin.register(Employee)
 class EmployeeModelAdmin(admin.ModelAdmin):
     list_display = ('first_name', 'last_name', 'middle_name', 'department', 'working_hours', 'status')
-    search_fields = ('first_name', 'last_name', 'department')
+    search_fields = ('full_name', 'person_id', 'card_number')
     exclude = ('full_name',)
 
 
