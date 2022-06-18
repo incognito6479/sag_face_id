@@ -10,7 +10,7 @@ from django.db.models import Count
 from datetime import datetime, timedelta
 
 from faceapp.helpers import get_employee_detail_attendances, get_all_employees_attendances, \
-    get_attendance_percentage_employee, get_attendance_percentage_department
+    get_attendance_percentage_employee, get_attendance_percentage_department, get_statistics_employee_attendance
 from faceapp.models import Attendance, Employee, Department, DepartmentShiftTime, CalendarWorkingDays, \
     EmployeeVacation, CsvImporter, EmployeeBusinessTrip
 from faceapp.tasks import importer_attendance
@@ -280,3 +280,39 @@ def get_department_percentage_for_view(request):
     data_json = json.loads(request.body)
     resp = get_attendance_percentage_department(data_json['department_id'])
     return HttpResponse(json.dumps(resp))
+
+
+def get_statistics_employee_attendance_ajax(request):
+    res = get_statistics_employee_attendance()
+    res = {k: v for k, v in sorted(res.items(), key=lambda item: item[1])}
+    res_keys = []
+    for key in res.keys():
+        res_keys.append(key)
+    if len(res) % 2 == 0:
+        res_keys.insert(len(res) // 2, 0)
+    lowest = []
+    highest = []
+    middle_key = res_keys[len(res) // 2]
+    key_counter = 0
+    for i in res_keys:
+        if i == middle_key:
+            key_counter = 1
+            continue
+        if key_counter == 0:
+            lowest.append(i)
+        else:
+            highest.append(i)
+    lowest_dict = {}
+    highest_dict = {}
+    for i in Employee.objects.select_related('department').filter(status=True):
+        for key, value in res.items():
+            if int(key) == int(i.id):
+                if int(key) in lowest:
+                    lowest_dict[key] = {'percentage': value, 'full_name': i.full_name, 'department': i.department.name}
+                else:
+                    highest_dict[key] = {'percentage': value, 'full_name': i.full_name, 'department': i.department.name}
+    context = {
+        'lowest_attendance': lowest_dict,
+        'highest_attendance': highest_dict
+    }
+    return HttpResponse(json.dumps(context))

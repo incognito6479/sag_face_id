@@ -1,11 +1,38 @@
-from faceapp.models import Employee, Attendance, CalendarWorkingDays, EmployeeVacation, CsvImporter, EmployeeBusinessTrip
+from faceapp.models import Employee, Attendance, CalendarWorkingDays, EmployeeVacation, CsvImporter, \
+    EmployeeBusinessTrip
 from system.settings import SERVER_TIME_DIFFERENCE
 import csv
 import pytz
 from datetime import datetime
-from calendar import monthrange
+from calendar import monthrange, monthcalendar
 
-utc=pytz.UTC
+utc = pytz.UTC
+
+
+def get_statistics_employee_attendance():
+    employees = Employee.objects.select_related('working_hours').filter(status=True)
+    employee_percentage_id = {}
+    for employee in employees:
+        working_hours = employee.working_hours.end_time.hour - employee.working_hours.start_time.hour
+        res = get_attendance_percentage_employee(employee.id)
+        days_must_work = res['hours_needed_to_work'][datetime.now().month-1]
+        overall_percentage = days_must_work // working_hours
+        attendances = res['attendances'].filter(time__month=datetime.now().month-1)
+        if str(res['employee_id']) == str(employee.id):
+            overall_percentage -= overall_percentage - \
+                                  (res['employee_worked_hours'][datetime.now().month-1] // working_hours)
+            for attendance in attendances:
+                if attendance.check_status == "checkIn":
+                    check_start_time = find_start_time_difference(working_hours, attendance)
+                    if check_start_time:
+                        overall_percentage -= 0.5
+                else:
+                    check_end_time = find_end_time_difference(working_hours, attendance)
+                    if check_end_time:
+                        overall_percentage -= 0.5
+        employee_percentage_id[employee.id] = int((overall_percentage * 100) // (days_must_work // working_hours))
+    # print(employee_percentage_id)
+    return employee_percentage_id
 
 
 def dry_function(objects):
@@ -13,21 +40,21 @@ def dry_function(objects):
     for i in objects:
         if i.date_from.month in custom_dict:
             if i.difference >= 7:
-                i.difference = (i.difference - (i.difference % 7)) // 7
+                i.difference = (i.difference - (i.difference % 7))
             custom_dict[i.date_from.month] += i.difference
         else:
             if i.date_from.month < i.date_to.month:
                 a = monthrange(datetime.now().year, i.date_from.month)[1] - i.date_from.day
                 if a >= 7:
-                    a = (a - (a % 7)) // 7
+                    a = (a - (a % 7))
                 custom_dict[i.date_from.month] = a
                 b = i.difference - (monthrange(datetime.now().year, i.date_from.month)[1] - i.date_from.day)
                 if b >= 7:
-                    b = (b - (b % 7)) // 7
+                    b = (b - (b % 7))
                 custom_dict[i.date_from.month + 1] = b
             else:
                 if i.difference >= 7:
-                    i.difference = (i.difference - (i.difference % 7)) // 7
+                    i.difference = (i.difference - (i.difference % 7))
                 custom_dict[i.date_from.month] = i.difference
     return custom_dict
 
@@ -58,7 +85,8 @@ def get_attendance_percentage_employee(employee_id):
     employee_worked_hours = {}
     percent = {}
     for i in range(1, 13):
-        hours_needed_to_work_in_month[i] = monthrange(datetime.now().year, i)[1] - 4
+        hours_needed_to_work_in_month[i] = monthrange(datetime.now().year, i)[1] \
+                                           - len([1 for i in monthcalendar(datetime.now().year, i) if i[6] != 0])
     for key, value in number_of_business_trips_in_month.items():
         hours_needed_to_work_in_month[key] -= value
     for key, value in number_of_vacations_in_month.items():
@@ -72,7 +100,7 @@ def get_attendance_percentage_employee(employee_id):
             hours_needed_to_work_in_month[key] = 0
     for i in range(1, 13):
         number_of_days_in_month = monthrange(datetime.now().year, i)[1]
-        for day in range(1, number_of_days_in_month+1):
+        for day in range(1, number_of_days_in_month + 1):
             a = attendances.filter(time__month=i, time__day=day)
             check_in_hour = 0
             check_out_hour = 0
@@ -92,8 +120,12 @@ def get_attendance_percentage_employee(employee_id):
             percent[key] = 0
     res = {
         'percent': percent,
-        'hours_needed_to_work': hours_needed_to_work_in_month
+        'employee_worked_hours': employee_worked_hours,
+        'hours_needed_to_work': hours_needed_to_work_in_month,
+        'attendances': attendances,
+        'employee_id': employee_id
     }
+    # print(employee_worked_hours)
     return res
 
 
@@ -104,7 +136,7 @@ def get_attendance_percentage_department(department_id):
     percentage = {}
     for i in employee_obj:
         resp = get_attendance_percentage_employee(i.id)
-        for key, value in resp['percent'].items():
+        for key, value in resp['employee_worked_hours'].items():
             if key in all_employee_worked_hours:
                 all_employee_worked_hours[key] += value
             else:
@@ -158,7 +190,8 @@ def get_all_employees_attendances(attendances, users):
                         'time': attendance.time,
                         'department': user.department,
                         'img': user.image,
-                        'start_time_difference': find_start_time_difference(user.working_hours.start_time.hour, attendance),
+                        'start_time_difference': find_start_time_difference(user.working_hours.start_time.hour,
+                                                                            attendance),
                         'end_time_difference': find_end_time_difference(user.working_hours.end_time.hour, attendance)
                     }]
                 else:
@@ -169,7 +202,8 @@ def get_all_employees_attendances(attendances, users):
                         'time': attendance.time,
                         'department': user.department,
                         'img': user.image,
-                        'start_time_difference': find_start_time_difference(user.working_hours.start_time.hour, attendance),
+                        'start_time_difference': find_start_time_difference(user.working_hours.start_time.hour,
+                                                                            attendance),
                         'end_time_difference': find_end_time_difference(user.working_hours.end_time.hour, attendance)
                     })
         if user.id not in attendance_user_id:
@@ -225,7 +259,7 @@ def save_importer_csv_to_attendance(request):
                 row[2] = row[2].replace("'", "")
                 if row[2] in card_number_from_database.values():
                     if last_time_visit_datetime_checker:
-                        if last_time_visit_datetime_checker.last_updated_time <\
+                        if last_time_visit_datetime_checker.last_updated_time < \
                                 datetime.fromisoformat(f"{row[3]} {row[4]}").replace(tzinfo=utc):
                             for key, value in card_number_from_database.items():
                                 if value == row[2]:
@@ -253,7 +287,7 @@ def save_importer_csv_to_attendance(request):
                         card_number_person_id_need_update.append(row)
     if card_number_person_id_need_update:
         CsvImporter.objects.get_or_create(last_updated_time=
-                    f"{card_number_person_id_need_update[-1][3]} {card_number_person_id_need_update[-1][4]}")
+                                          f"{card_number_person_id_need_update[-1][3]} {card_number_person_id_need_update[-1][4]}")
     attendance_bulk_create = []
     for row in card_number_person_id_need_update:
         try:

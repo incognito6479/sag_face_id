@@ -2,7 +2,7 @@ from django.urls import path
 from django.contrib import admin
 from faceapp.views import LoginView, HomeView, LogoutView, DepartmentListView, DepartmentDetailView, EmployeeDetail, \
     ImporterView, ShiftTimeWorkers, CalendarListView, VacationListView, get_department_percentage_for_view, BusinessTripView, \
-    StatisticsEmployeeTemplateView, StatisticsDepartmentTemplateView
+    StatisticsEmployeeTemplateView, StatisticsDepartmentTemplateView, get_statistics_employee_attendance_ajax
 
 urlpatterns = [
     path('admin/', admin.site.urls, name="django_admin_url"),
@@ -20,4 +20,6 @@ urlpatterns = [
     path('statistics_employee_view/', StatisticsEmployeeTemplateView.as_view(), name='statistics_employee_view'),
     path('statistics_department_view/', StatisticsDepartmentTemplateView.as_view(), name='statistics_department_view'),
     path('department_percentage_ajax/', get_department_percentage_for_view, name='department_percentage_ajax'),
+    path('statistics_employee_attendance_ajax/', get_statistics_employee_attendance_ajax,
+         name='statistics_employee_attendance_ajax'),
 ]

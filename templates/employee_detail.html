@@ -252,7 +252,7 @@
             let barColors = [];
             let percent_from_db = {{ percent }};
             for(let key in percent_from_db) {
-                if(percent_from_db[key] >= 90 && percent_from_db[key] <= 100) {
+                if(percent_from_db[key] >= 90) {
                     barColors.push('green')
                 } else if(percent_from_db[key] >= 70 && percent_from_db[key] <= 89) {
                     barColors.push('yellow')

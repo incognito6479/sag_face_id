@@ -135,6 +135,7 @@ class CalendarWorkingDays(models.Model):
              update_fields=None):
         if not self.date_to:
             self.difference = 1
+            self.date_to = self.date_from
         else:
             self.difference = abs(self.date_to - self.date_from).days + 1
         super(CalendarWorkingDays, self).save()
