@@ -25,6 +25,8 @@ class StatisticsEmployeeTemplateView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(StatisticsEmployeeTemplateView, self).get_context_data(**kwargs)
+        # my_dict = {1: 20, 3: 50, 8: 80, 7: 54, 2: 96}
+        # print(sorted(my_dict.keys()))
         return context
 
 
@@ -282,7 +284,98 @@ def get_department_percentage_for_view(request):
     return HttpResponse(json.dumps(resp))
 
 
+def get_statistics_department(request):
+    department_obj = Department.objects.all()
+    shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
+    shift_time_workers_ids = []
+    department_id_and_percent = {}
+    for i in shift_time_workers:
+        shift_time_workers_ids.append(i['department_id'])
+    for i in department_obj:
+        if i.id not in shift_time_workers_ids:
+            res = get_attendance_percentage_department(i.id)
+            if len(res) == 0:
+                department_id_and_percent[i.id] = 0
+            else:
+                department_id_and_percent[i.id] = res[datetime.now().month - 1]
+    department_id_and_percent = {k: v for k, v in sorted(department_id_and_percent.items(), key=lambda item: item[1])}
+    res_keys = []
+    for key in department_id_and_percent.keys():
+        res_keys.append(key)
+    if len(department_id_and_percent) % 2 == 0:
+        res_keys.insert(len(department_id_and_percent) // 2, 0)
+    lowest = []
+    highest = []
+    middle_key = res_keys[len(department_id_and_percent) // 2]
+    key_counter = 0
+    for i in res_keys:
+        if i == middle_key:
+            key_counter = 1
+            continue
+        if key_counter == 0:
+            lowest.append(i)
+        else:
+            highest.append(i)
+    lowest_dict = {}
+    highest_dict = {}
+    for i in department_obj:
+        for key, value in department_id_and_percent.items():
+            if int(key) == int(i.id):
+                if int(key) in lowest:
+                    lowest_dict[key] = {'percentage': value, 'name': i.name}
+                else:
+                    highest_dict[key] = {'percentage': value, 'name': i.name}
+    context = {
+        'lowest': lowest_dict,
+        'highest': highest_dict
+    }
+    return HttpResponse(json.dumps(context))
+
+
+def get_statistics_employee_working_hours_ajax(request):
+    # data_json = json.loads(request.body)
+    employee_obj = Employee.objects.filter(status=True)
+    current_month = datetime.now().month
+    employee_percent_dict = {}
+    for i in employee_obj:
+        resp = get_attendance_percentage_employee(i.id)
+        employee_percent_dict[resp['employee_id']] = resp['percent'][current_month]
+    employee_percent_dict = {k: v for k, v in sorted(employee_percent_dict.items(), key=lambda item: item[1])}
+    res_keys = []
+    for key in employee_percent_dict.keys():
+        res_keys.append(key)
+    if len(employee_percent_dict) % 2 == 0:
+        res_keys.insert(len(employee_percent_dict) // 2, 0)
+    lowest = []
+    highest = []
+    middle_key = res_keys[len(employee_percent_dict) // 2]
+    key_counter = 0
+    for i in res_keys:
+        if i == middle_key:
+            key_counter = 1
+            continue
+        if key_counter == 0:
+            lowest.append(i)
+        else:
+            highest.append(i)
+    lowest_dict = {}
+    highest_dict = {}
+    for i in Employee.objects.select_related('department').filter(status=True):
+        for key, value in employee_percent_dict.items():
+            if int(key) == int(i.id):
+                if int(key) in lowest:
+                    lowest_dict[key] = {'percentage': value, 'full_name': i.full_name, 'department': i.department.name}
+                else:
+                    highest_dict[key] = {'percentage': value, 'full_name': i.full_name, 'department': i.department.name}
+    context = {
+        'lowest_working_hours': lowest_dict,
+        'highest_working_hours': highest_dict
+    }
+    return HttpResponse(json.dumps(context))
+
+
 def get_statistics_employee_attendance_ajax(request):
+    # data_json = json.loads(request.body)
     res = get_statistics_employee_attendance()
     res = {k: v for k, v in sorted(res.items(), key=lambda item: item[1])}
     res_keys = []

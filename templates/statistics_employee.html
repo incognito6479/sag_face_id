@@ -85,10 +85,11 @@
                                                     <th scope="col">%</th>
                                                 </tr>
                                               </thead>
-                                              <tbody>
+                                              <tbody class="statistics_working_hours_highest_tbody">
                                                 <tr>
                                                     <th colspan="3" class="text-center">
-                                                        Нет рабочего времени
+                                                        <h2 class="statistics_attendance_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
+                                                        <h5 class="statistics_working_hours_highest_no_entry d-none">Нет рабочего времени</h5>
                                                     </th>
                                                 </tr>
                                               </tbody>
@@ -137,10 +138,11 @@
                                                     <th scope="col">%</th>
                                                 </tr>
                                               </thead>
-                                              <tbody>
+                                              <tbody class="statistics_working_hours_lowest_tbody">
                                                 <tr>
                                                     <th colspan="3" class="text-center">
-                                                        Нет рабочего времени
+                                                        <h2 class="statistics_working_hours_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
+                                                        <h5 class="statistics_working_hours_lowest_no_entry d-none">Нет рабочего времени</h5>
                                                     </th>
                                                 </tr>
                                               </tbody>
@@ -171,15 +173,15 @@
                     $('.statistics_attendance_lowest_loader').removeClass('d-none');
                 },
                 complete: function() {
-                    $('.statistics_attendance_highest_no_entry').addClass('d-none');
-                    $('.statistics_attendance_lowest_no_entry').addClass('d-none');
+                    {#$('.statistics_attendance_highest_no_entry').addClass('d-none');#}
+                    {#$('.statistics_attendance_lowest_no_entry').addClass('d-none');#}
                 },
                 success: function(e) {
                     let data_json = JSON.parse(e);
                     let highest_attendance = data_json['highest_attendance'];
                     let lowest_attendance = data_json['lowest_attendance'];
                     if (Object.keys(highest_attendance).length === 0) {
-                        $('.statistics_attendance_highest').removeClass('d-none')
+                        $('.statistics_attendance_highest_no_entry').removeClass('d-none')
                     } else {
                         let template = ``;
                         let loop_counter = 0
@@ -197,9 +199,8 @@
                         $('.statistics_attendance_highest_tbody').html(template)
                     }
                     if (Object.keys(lowest_attendance).length === 0) {
-                        $('.statistics_attendance_lowest').removeClass('d-none')
+                        $('.statistics_attendance_lowest_no_entry').removeClass('d-none')
                     } else {
-                        console.log(lowest_attendance)
                         let template = ``;
                         let loop_counter = 0
                         for(let key in lowest_attendance) {
@@ -214,6 +215,65 @@
                             `
                         }
                         $('.statistics_attendance_lowest_tbody').html(template)
+                    }
+                },
+                error: function(error) {
+                    console.log(error)
+                }
+            });
+            $.ajax({
+                url: "{% url 'get_statistics_employee_working_hours_ajax' %}",
+                type: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                },
+                beforeSend: function() {
+                    $('.statistics_working_hours_highest_loader').removeClass('d-none');
+                    $('.statistics_working_hours_lowest_loader').removeClass('d-none');
+                },
+                complete: function() {
+                    {#$('.statistics_working_hours_highest_no_entry').addClass('d-none');#}
+                    {#$('.statistics_working_hours_lowest_no_entry').addClass('d-none');#}
+                },
+                success: function(e) {
+                    let data_json = JSON.parse(e);
+                    let highest_working_hours = data_json['highest_working_hours'];
+                    let lowest_working_hours = data_json['lowest_working_hours'];
+                    if (Object.keys(highest_working_hours).length === 0) {
+                        $('.statistics_working_hours_highest_no_entry').removeClass('d-none')
+                    } else {
+                        let template = ``;
+                        let loop_counter = 0
+                        for(let key in highest_working_hours) {
+                            loop_counter += 1;
+                            template += `
+                                <tr>
+                                    <td>${loop_counter}</td>
+                                    <td>${highest_working_hours[key]['full_name']}</td>
+                                    <td>${highest_working_hours[key]['department']}</td>
+                                    <td>${highest_working_hours[key]['percentage']} %</td>
+                                </tr>
+                            `
+                        }
+                        $('.statistics_working_hours_highest_tbody').html(template)
+                    }
+                    if (Object.keys(lowest_working_hours).length === 0) {
+                        $('.statistics_working_hours_lowest_no_entry').removeClass('d-none')
+                    } else {
+                        let template = ``;
+                        let loop_counter = 0
+                        for(let key in lowest_working_hours) {
+                            loop_counter += 1;
+                            template += `
+                                <tr>
+                                    <td>${loop_counter}</td>
+                                    <td>${lowest_working_hours[key]['full_name']}</td>
+                                    <td>${lowest_working_hours[key]['department']}</td>
+                                    <td>${lowest_working_hours[key]['percentage']} %</td>
+                                </tr>
+                            `
+                        }
+                        $('.statistics_working_hours_lowest_tbody').html(template)
                     }
                 },
                 error: function(error) {

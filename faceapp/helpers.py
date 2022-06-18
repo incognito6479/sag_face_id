@@ -15,12 +15,12 @@ def get_statistics_employee_attendance():
     for employee in employees:
         working_hours = employee.working_hours.end_time.hour - employee.working_hours.start_time.hour
         res = get_attendance_percentage_employee(employee.id)
-        days_must_work = res['hours_needed_to_work'][datetime.now().month-1]
+        days_must_work = res['hours_needed_to_work'][datetime.now().month]
         overall_percentage = days_must_work // working_hours
-        attendances = res['attendances'].filter(time__month=datetime.now().month-1)
+        attendances = res['attendances'].filter(time__month=datetime.now().month)
         if str(res['employee_id']) == str(employee.id):
             overall_percentage -= overall_percentage - \
-                                  (res['employee_worked_hours'][datetime.now().month-1] // working_hours)
+                                  (res['employee_worked_hours'][datetime.now().month] // working_hours)
             for attendance in attendances:
                 if attendance.check_status == "checkIn":
                     check_start_time = find_start_time_difference(working_hours, attendance)

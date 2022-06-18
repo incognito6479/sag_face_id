@@ -112,7 +112,8 @@ class Attendance(models.Model):
 
 
 class DepartmentShiftTime(models.Model):
-    department = models.ForeignKey('faceapp.Department', on_delete=models.PROTECT, verbose_name="Отдел")
+    department = models.ForeignKey('faceapp.Department', on_delete=models.PROTECT, verbose_name="Отдел",
+                                   related_name='shift_time_department')
     shift_time = models.BooleanField(default=True, verbose_name="Работа по сменам")
 
     def __str__(self):
