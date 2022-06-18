@@ -164,10 +164,10 @@
         $(document).ready(function(){
             $.ajax({
                 url: "{% url 'statistics_employee_attendance_ajax' %}",
-                type: 'POST',
-                headers: {
+                type: 'GET',
+                /* headers: {
                     'X-CSRFToken': csrftoken,
-                },
+                }, */
                 beforeSend: function() {
                     $('.statistics_attendance_highest_loader').removeClass('d-none');
                     $('.statistics_attendance_lowest_loader').removeClass('d-none');
@@ -218,15 +218,15 @@
                     }
                 },
                 error: function(error) {
-                    console.log(error)
+                    console.log("Error", error)
                 }
             });
             $.ajax({
                 url: "{% url 'get_statistics_employee_working_hours_ajax' %}",
-                type: 'POST',
-                headers: {
+                type: 'GET',
+                /* headers: {
                     'X-CSRFToken': csrftoken,
-                },
+                }, */
                 beforeSend: function() {
                     $('.statistics_working_hours_highest_loader').removeClass('d-none');
                     $('.statistics_working_hours_lowest_loader').removeClass('d-none');
@@ -277,7 +277,7 @@
                     }
                 },
                 error: function(error) {
-                    console.log(error)
+                    console.log("Error", error)
                 }
             })
         })
