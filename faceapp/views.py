@@ -297,7 +297,7 @@ def get_statistics_department(request):
             if len(res) == 0:
                 department_id_and_percent[i.id] = 0
             else:
-                department_id_and_percent[i.id] = res[datetime.now().month - 1]
+                department_id_and_percent[i.id] = res[datetime.now().month]
     department_id_and_percent = {k: v for k, v in sorted(department_id_and_percent.items(), key=lambda item: item[1])}
     res_keys = []
     for key in department_id_and_percent.keys():
