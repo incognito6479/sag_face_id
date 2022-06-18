@@ -114,10 +114,11 @@
         $(document).ready(function(){
             $.ajax({
                 url: "{% url 'get_statistics_department' %}",
-                type: 'GET',
-                /* headers: {
+                type: 'POST',
+                headers: {
                     'X-CSRFToken': csrftoken,
-                }, */
+                    'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
+                },
                 beforeSend: function() {
                     {#$('.statistics_attendance_highest_loader').removeClass('d-none');#}
                     {#$('.statistics_attendance_lowest_loader').removeClass('d-none');#}

@@ -164,10 +164,11 @@
         $(document).ready(function(){
             $.ajax({
                 url: "{% url 'statistics_employee_attendance_ajax' %}",
-                type: 'GET',
-                /* headers: {
+                type: 'POST',
+                headers: {
                     'X-CSRFToken': csrftoken,
-                }, */
+                    'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
+                },
                 beforeSend: function() {
                     $('.statistics_attendance_highest_loader').removeClass('d-none');
                     $('.statistics_attendance_lowest_loader').removeClass('d-none');
@@ -223,10 +224,11 @@
             });
             $.ajax({
                 url: "{% url 'get_statistics_employee_working_hours_ajax' %}",
-                type: 'GET',
-                /* headers: {
+                type: 'POST',
+                headers: {
                     'X-CSRFToken': csrftoken,
-                }, */
+                    'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
+                },
                 beforeSend: function() {
                     $('.statistics_working_hours_highest_loader').removeClass('d-none');
                     $('.statistics_working_hours_lowest_loader').removeClass('d-none');
