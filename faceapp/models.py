@@ -5,6 +5,11 @@ from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser
 )
 
+STATISTICS_TYPE = (
+    ('highest', 'highest'),
+    ('lowest', 'lowest')
+)
+
 """
 When Creating a simple User use manage.py createsuperuser and remove is_superuser is_staff
 """
@@ -205,3 +210,32 @@ class CsvImporter(models.Model):
         permissions = (
             ("can_add_csv_importer", "Can add CSV importer"),
         )
+
+
+class DepartmentStatistics(models.Model):
+    type = models.CharField(max_length=100, choices=STATISTICS_TYPE)
+    name = models.CharField(max_length=255)
+    percentage = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.name} | {self.percentage} | {self.type}"
+
+
+class EmployeeStatisticsAttendance(models.Model):
+    type = models.CharField(max_length=100, choices=STATISTICS_TYPE)
+    name = models.CharField(max_length=255)
+    department = models.CharField(max_length=255)
+    percentage = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.name} | {self.percentage} | {self.type}"
+
+
+class EmployeeStatisticsWorkingHours(models.Model):
+    type = models.CharField(max_length=100, choices=STATISTICS_TYPE)
+    name = models.CharField(max_length=255)
+    department = models.CharField(max_length=255)
+    percentage = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.name} | {self.percentage} | {self.type}"

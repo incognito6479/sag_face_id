@@ -6,8 +6,8 @@ from faceapp.helpers import save_importer_csv_to_attendance, get_attendance_perc
 
 
 @shared_task
-def importer_attendance(request):
-    save_importer_csv_to_attendance(request)
+def importer_attendance():
+    save_importer_csv_to_attendance()
     return
 
 

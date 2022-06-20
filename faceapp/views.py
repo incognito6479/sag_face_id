@@ -10,9 +10,10 @@ from django.db.models import Count
 from datetime import datetime, timedelta
 
 from faceapp.helpers import get_employee_detail_attendances, get_all_employees_attendances, \
-    get_attendance_percentage_employee, get_attendance_percentage_department, get_statistics_employee_attendance
+    get_attendance_percentage_employee, get_attendance_percentage_department
 from faceapp.models import Attendance, Employee, Department, DepartmentShiftTime, CalendarWorkingDays, \
-    EmployeeVacation, CsvImporter, EmployeeBusinessTrip
+    EmployeeVacation, CsvImporter, EmployeeBusinessTrip, DepartmentStatistics, EmployeeStatisticsAttendance, \
+    EmployeeStatisticsWorkingHours
 from faceapp.tasks import importer_attendance
 import os
 from django.core.files.storage import default_storage
@@ -25,8 +26,12 @@ class StatisticsEmployeeTemplateView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(StatisticsEmployeeTemplateView, self).get_context_data(**kwargs)
-        # my_dict = {1: 20, 3: 50, 8: 80, 7: 54, 2: 96}
-        # print(sorted(my_dict.keys()))
+        emp_att = EmployeeStatisticsAttendance.objects.all()
+        empl_wh = EmployeeStatisticsWorkingHours.objects.all()
+        context['attendances_h'] = emp_att.filter(type="highest").order_by('-percentage')
+        context['attendances_l'] = emp_att.filter(type="lowest").order_by('percentage')
+        context['working_hours_h'] = empl_wh.filter(type="highest").order_by('-percentage')
+        context['working_hours_l'] = empl_wh.filter(type="lowest").order_by('percentage')
         return context
 
 
@@ -35,6 +40,9 @@ class StatisticsDepartmentTemplateView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(StatisticsDepartmentTemplateView, self).get_context_data(**kwargs)
+        dep_percentage = DepartmentStatistics.objects.all()
+        context['department_statistics_h'] = dep_percentage.filter(type="highest").order_by('-percentage')
+        context['department_statistics_l'] = dep_percentage.filter(type="lowest").order_by('percentage')
         return context
 
 
@@ -267,7 +275,7 @@ class ImporterView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if os.path.exists('media/attendance/importer.csv'):
             os.remove("media/attendance/importer.csv")
         os.path.join(settings.MEDIA_ROOT, default_storage.save('attendance/importer.csv', ContentFile(file.read())))
-        importer_attendance(request)
+        importer_attendance.delay()
         last_updated_time = CsvImporter.objects.all().order_by('id')
         if last_updated_time:
             last_updated_time = last_updated_time.last().last_updated_time
@@ -283,118 +291,3 @@ def get_department_percentage_for_view(request):
     resp = get_attendance_percentage_department(data_json['department_id'])
     return HttpResponse(json.dumps(resp))
 
-
-def get_statistics_department(request):
-    department_obj = Department.objects.all()
-    shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
-    shift_time_workers_ids = []
-    department_id_and_percent = {}
-    current_month = datetime.now().month - 1
-    for i in shift_time_workers:
-        shift_time_workers_ids.append(i['department_id'])
-    for i in department_obj:
-        if i.id not in shift_time_workers_ids:
-            res = get_attendance_percentage_department(i.id)
-            if len(res) == 0:
-                department_id_and_percent[i.id] = 0
-            else:
-                department_id_and_percent[i.id] = res[current_month]
-    department_id_and_percent = {k: v for k, v in sorted(department_id_and_percent.items(), key=lambda item: item[1])}
-    if len(department_id_and_percent) % 2 == 0:
-        department_id_and_percent[len(department_id_and_percent) // 2] = 0
-    lowest = {}
-    highest = {}
-    middle_key = len(department_id_and_percent) // 2
-    key_counter = 0
-    for key, value in department_id_and_percent.items():
-        if key_counter >= middle_key:
-            highest[key] = value
-        else:
-            lowest[key] = value
-        key_counter += 1
-    lowest_dict = []
-    highest_dict = []
-    for key, value in highest.items():
-        for i in department_obj:
-            if int(key) == int(i.id):
-                highest_dict.append({'percentage': value, 'name': i.name})
-    for key, value in lowest.items():
-        for i in department_obj:
-            if int(key) == int(i.id):
-                lowest_dict.append({'percentage': value, 'name': i.name})
-    context = {
-        'lowest': [lowest_dict[0], lowest_dict[1], lowest_dict[2]],
-        'highest': [highest_dict[-1], highest_dict[-2], highest_dict[-3]]
-    }
-    return HttpResponse(json.dumps(context))
-
-
-def get_statistics_employee_working_hours_ajax(request):
-    employee_obj = Employee.objects.filter(status=True)
-    current_month = datetime.now().month - 1
-    employee_percent_dict = {}
-    for i in employee_obj:
-        resp = get_attendance_percentage_employee(i.id)
-        employee_percent_dict[resp['employee_id']] = resp['percent'][current_month]
-    employee_percent_dict = {k: v for k, v in sorted(employee_percent_dict.items(), key=lambda item: item[1])}
-    if len(employee_percent_dict) % 2 == 0:
-        employee_percent_dict[len(employee_percent_dict) // 2] = 0
-    lowest = {}
-    highest = {}
-    middle_key = len(employee_percent_dict) // 2
-    key_counter = 0
-    for key, value in employee_percent_dict.items():
-        if key_counter >= middle_key:
-            highest[key] = value
-        else:
-            lowest[key] = value
-        key_counter += 1
-    lowest_dict = []
-    highest_dict = []
-    for key, value in lowest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
-            if int(key) == int(i.id):
-                lowest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
-    for key, value in highest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
-            if int(key) == int(i.id):
-                highest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
-    highest_dict.reverse()
-    context = {
-        'lowest_working_hours': lowest_dict[0:10],
-        'highest_working_hours': highest_dict[0:10]
-    }
-    return HttpResponse(json.dumps(context))
-
-
-def get_statistics_employee_attendance_ajax(request):
-    res = get_statistics_employee_attendance()
-    res = {k: v for k, v in sorted(res.items(), key=lambda item: item[1])}
-    if len(res) % 2 == 0:
-        res[len(res) // 2] = 0
-    lowest = {}
-    highest = {}
-    middle_key = len(res) // 2
-    key_counter = 0
-    for key, value in res.items():
-        if key_counter >= middle_key:
-            highest[key] = value
-        else:
-            lowest[key] = value
-        key_counter += 1
-    lowest_dict = []
-    highest_dict = []
-    for key, value in lowest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
-            if int(key) == int(i.id):
-                lowest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
-    for key, value in highest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
-            if int(key) == int(i.id):
-                highest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
-    highest_dict.reverse()
-    context = {
-        'lowest_attendance': lowest_dict[0:10],
-        'highest_attendance': highest_dict[0:10]
-    }
-    return HttpResponse(json.dumps(context))

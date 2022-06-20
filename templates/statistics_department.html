@@ -61,12 +61,19 @@
                                                 </tr>
                                               </thead>
                                               <tbody class="statistics_attendance_highest_tbody">
-                                                <tr>
-                                                    <th colspan="3" class="text-center">
-                                                        <h2 class="statistics_working_hours_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
-                                                        <h5 class="statistics_attendance_highest_no_entry d-none">Нет записи</h5>
-                                                    </th>
-                                                </tr>
+                                                {% for i in department_statistics_h %}
+                                                    <tr>
+                                                        <th>{{ forloop.counter }}</th>
+                                                        <td>{{ i.name }}</td>
+                                                        <td>{{ i.percentage }} %</td>
+                                                    </tr>
+                                                    {% empty %}
+                                                        <tr>
+                                                            <th colspan="3" class="text-center">
+                                                                <h5 class="statistics_attendance_highest_no_entry d-none">Нет записи</h5>
+                                                            </th>
+                                                        </tr>
+                                                {% endfor %}
                                               </tbody>
                                           </table>
                                       </div>
@@ -89,12 +96,19 @@
                                                 </tr>
                                               </thead>
                                               <tbody class="statistics_attendance_lowest_tbody">
-                                                <tr>
-                                                    <th colspan="3" class="text-center">
-                                                        <h2 class="statistics_working_hours_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
-                                                        <h5 class="statistics_attendance_lowest_no_entry d-none">Нет записи</h5>
-                                                    </th>
-                                                </tr>
+                                                {% for i in department_statistics_l %}
+                                                    <tr>
+                                                        <th>{{ forloop.counter }}</th>
+                                                        <td>{{ i.name }}</td>
+                                                        <td>{{ i.percentage }} %</td>
+                                                    </tr>
+                                                    {% empty %}
+                                                        <tr>
+                                                            <th colspan="3" class="text-center">
+                                                                <h5 class="statistics_attendance_highest_no_entry d-none">Нет записи</h5>
+                                                            </th>
+                                                        </tr>
+                                                {% endfor %}
                                               </tbody>
                                           </table>
                                       </div>
@@ -111,9 +125,9 @@
 
 {% block extra_js %}
     <script>
-        $(document).ready(function(){
+        /* $(document).ready(function(){
             $.ajax({
-                url: "{% url 'get_statistics_department' %}",
+                url: ,
                 type: 'POST',
                 headers: {
                     'X-CSRFToken': csrftoken,
@@ -168,6 +182,6 @@
                     console.log("Error", error)
                 }
             });
-        })
+        }) */
     </script>
 {% endblock extra_js %}

@@ -1,5 +1,6 @@
 from faceapp.models import Employee, Attendance, CalendarWorkingDays, EmployeeVacation, CsvImporter, \
-    EmployeeBusinessTrip
+    EmployeeBusinessTrip, Department, DepartmentShiftTime, DepartmentStatistics, EmployeeStatisticsAttendance, \
+    EmployeeStatisticsWorkingHours
 from system.settings import SERVER_TIME_DIFFERENCE
 import csv
 import pytz
@@ -239,7 +240,184 @@ def find_start_time_difference(user_working_hour, attendance_time):
     return difference
 
 
-def save_importer_csv_to_attendance(request):
+def get_statistics_department():
+    department_obj = Department.objects.all()
+    shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
+    shift_time_workers_ids = []
+    department_id_and_percent = {}
+    current_month = datetime.now().month - 1
+    for i in shift_time_workers:
+        shift_time_workers_ids.append(i['department_id'])
+    for i in department_obj:
+        if i.id not in shift_time_workers_ids:
+            res = get_attendance_percentage_department(i.id)
+            if len(res) == 0:
+                department_id_and_percent[i.id] = 0
+            else:
+                department_id_and_percent[i.id] = res[current_month]
+    department_id_and_percent = {k: v for k, v in sorted(department_id_and_percent.items(), key=lambda item: item[1])}
+    if len(department_id_and_percent) % 2 == 0:
+        department_id_and_percent[len(department_id_and_percent) // 2] = 0
+    lowest = {}
+    highest = {}
+    middle_key = len(department_id_and_percent) // 2
+    key_counter = 0
+    for key, value in department_id_and_percent.items():
+        if key_counter >= middle_key:
+            highest[key] = value
+        else:
+            lowest[key] = value
+        key_counter += 1
+    lowest_dict = []
+    highest_dict = []
+    for key, value in highest.items():
+        for i in department_obj:
+            if int(key) == int(i.id):
+                highest_dict.append({'percentage': value, 'name': i.name})
+    for key, value in lowest.items():
+        for i in department_obj:
+            if int(key) == int(i.id):
+                lowest_dict.append({'percentage': value, 'name': i.name})
+    context = {
+        'lowest': [lowest_dict[0], lowest_dict[1], lowest_dict[2]],
+        'highest': [highest_dict[-1], highest_dict[-2], highest_dict[-3]]
+    }
+    department_bulk_create = []
+    for i in context['lowest']:
+        department_bulk_create.append(
+            DepartmentStatistics(
+                type="lowest",
+                name=i['name'],
+                percentage=i['percentage']
+            )
+        )
+    for i in context['highest']:
+        department_bulk_create.append(
+            DepartmentStatistics(
+                type="highest",
+                name=i['name'],
+                percentage=i['percentage']
+            )
+        )
+    DepartmentStatistics.objects.all().delete()
+    DepartmentStatistics.objects.bulk_create(department_bulk_create)
+    return context
+
+
+def get_statistics_employee_attendance_ajax():
+    res = get_statistics_employee_attendance()
+    res = {k: v for k, v in sorted(res.items(), key=lambda item: item[1])}
+    if len(res) % 2 == 0:
+        res[len(res) // 2] = 0
+    lowest = {}
+    highest = {}
+    middle_key = len(res) // 2
+    key_counter = 0
+    for key, value in res.items():
+        if key_counter >= middle_key:
+            highest[key] = value
+        else:
+            lowest[key] = value
+        key_counter += 1
+    lowest_dict = []
+    highest_dict = []
+    for key, value in lowest.items():
+        for i in Employee.objects.select_related('department').filter(status=True):
+            if int(key) == int(i.id):
+                lowest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
+    for key, value in highest.items():
+        for i in Employee.objects.select_related('department').filter(status=True):
+            if int(key) == int(i.id):
+                highest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
+    highest_dict.reverse()
+    context = {
+        'lowest_attendance': lowest_dict[0:10],
+        'highest_attendance': highest_dict[0:10]
+    }
+    attendance_employee_bulk_create = []
+    for i in context['lowest_attendance']:
+        attendance_employee_bulk_create.append(
+            EmployeeStatisticsAttendance(
+                type="lowest",
+                name=i['full_name'],
+                percentage=i['percentage'],
+                department=i['department']
+            )
+        )
+    for i in context['highest_attendance']:
+        attendance_employee_bulk_create.append(
+            EmployeeStatisticsAttendance(
+                type="highest",
+                name=i['full_name'],
+                percentage=i['percentage'],
+                department=i['department']
+            )
+        )
+    EmployeeStatisticsAttendance.objects.all().delete()
+    EmployeeStatisticsAttendance.objects.bulk_create(attendance_employee_bulk_create)
+    return context
+
+
+def get_statistics_employee_working_hours_ajax():
+    employee_obj = Employee.objects.filter(status=True)
+    current_month = datetime.now().month - 1
+    employee_percent_dict = {}
+    for i in employee_obj:
+        resp = get_attendance_percentage_employee(i.id)
+        employee_percent_dict[resp['employee_id']] = resp['percent'][current_month]
+    employee_percent_dict = {k: v for k, v in sorted(employee_percent_dict.items(), key=lambda item: item[1])}
+    if len(employee_percent_dict) % 2 == 0:
+        employee_percent_dict[len(employee_percent_dict) // 2] = 0
+    lowest = {}
+    highest = {}
+    middle_key = len(employee_percent_dict) // 2
+    key_counter = 0
+    for key, value in employee_percent_dict.items():
+        if key_counter >= middle_key:
+            highest[key] = value
+        else:
+            lowest[key] = value
+        key_counter += 1
+    lowest_dict = []
+    highest_dict = []
+    for key, value in lowest.items():
+        for i in Employee.objects.select_related('department').filter(status=True):
+            if int(key) == int(i.id):
+                lowest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
+    for key, value in highest.items():
+        for i in Employee.objects.select_related('department').filter(status=True):
+            if int(key) == int(i.id):
+                highest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
+    highest_dict.reverse()
+    context = {
+        'lowest_working_hours': lowest_dict[0:10],
+        'highest_working_hours': highest_dict[0:10]
+    }
+    working_hours_bulk_create = []
+    for i in context['lowest_working_hours']:
+        working_hours_bulk_create.append(
+            EmployeeStatisticsWorkingHours(
+                type="lowest",
+                name=i['full_name'],
+                percentage=i['percentage'],
+                department=i['department']
+            )
+        )
+    for i in context['highest_working_hours']:
+        working_hours_bulk_create.append(
+            EmployeeStatisticsWorkingHours(
+                type="highest",
+                name=i['full_name'],
+                percentage=i['percentage'],
+                department=i['department']
+            )
+        )
+    EmployeeStatisticsWorkingHours.objects.all().delete()
+    EmployeeStatisticsWorkingHours.objects.bulk_create(working_hours_bulk_create)
+    return context
+
+
+def save_importer_csv_to_attendance():
     csv_file = open('media/attendance/importer.csv')
     csv_reader = csv.reader(csv_file)
     rows = []
@@ -303,4 +481,7 @@ def save_importer_csv_to_attendance(request):
             pass
     if attendance_bulk_create:
         Attendance.objects.bulk_create(attendance_bulk_create)
+    get_statistics_department()
+    get_statistics_employee_attendance_ajax()
+    get_statistics_employee_working_hours_ajax()
     return
