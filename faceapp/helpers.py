@@ -12,27 +12,32 @@ utc = pytz.UTC
 
 def get_statistics_employee_attendance():
     employees = Employee.objects.select_related('working_hours').filter(status=True)
+    shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
+    shift_time_workers_ids = []
+    for i in shift_time_workers:
+        shift_time_workers_ids.append(i['department_id'])
     employee_percentage_id = {}
     current_month = datetime.now().month - 1
     for employee in employees:
-        working_hours = employee.working_hours.end_time.hour - employee.working_hours.start_time.hour
-        res = get_attendance_percentage_employee(employee.id)
-        days_must_work = res['hours_needed_to_work'][current_month]
-        overall_percentage = days_must_work // working_hours
-        attendances = res['attendances'].filter(time__month=current_month)
-        if str(res['employee_id']) == str(employee.id):
-            overall_percentage -= overall_percentage - \
-                                  (res['employee_worked_hours'][current_month] // working_hours)
-            for attendance in attendances:
-                if attendance.check_status == "checkIn":
-                    check_start_time = find_start_time_difference(working_hours, attendance)
-                    if check_start_time:
-                        overall_percentage -= 0.5
-                else:
-                    check_end_time = find_end_time_difference(working_hours, attendance)
-                    if check_end_time:
-                        overall_percentage -= 0.5
-        employee_percentage_id[employee.id] = int((overall_percentage * 100) // (days_must_work // working_hours))
+        if employee.department_id not in shift_time_workers_ids:
+            working_hours = employee.working_hours.end_time.hour - employee.working_hours.start_time.hour
+            res = get_attendance_percentage_employee(employee.id)
+            days_must_work = res['hours_needed_to_work'][current_month]
+            overall_percentage = days_must_work // working_hours
+            attendances = res['attendances'].filter(time__month=current_month)
+            if str(res['employee_id']) == str(employee.id):
+                overall_percentage -= overall_percentage - \
+                                      (res['employee_worked_hours'][current_month] // working_hours)
+                for attendance in attendances:
+                    if attendance.check_status == "checkIn":
+                        check_start_time = find_start_time_difference(working_hours, attendance)
+                        if check_start_time:
+                            overall_percentage -= 0.5
+                    else:
+                        check_end_time = find_end_time_difference(working_hours, attendance)
+                        if check_end_time:
+                            overall_percentage -= 0.5
+            employee_percentage_id[employee.id] = int((overall_percentage * 100) // (days_must_work // working_hours))
     # print(employee_percentage_id)
     return employee_percentage_id
 
@@ -360,11 +365,16 @@ def get_statistics_employee_attendance_ajax():
 
 def get_statistics_employee_working_hours_ajax():
     employee_obj = Employee.objects.filter(status=True)
+    shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
+    shift_time_workers_ids = []
+    for i in shift_time_workers:
+        shift_time_workers_ids.append(i['department_id'])
     current_month = datetime.now().month - 1
     employee_percent_dict = {}
     for i in employee_obj:
-        resp = get_attendance_percentage_employee(i.id)
-        employee_percent_dict[resp['employee_id']] = resp['percent'][current_month]
+        if i.department_id not in shift_time_workers_ids:
+            resp = get_attendance_percentage_employee(i.id)
+            employee_percent_dict[resp['employee_id']] = resp['percent'][current_month]
     employee_percent_dict = {k: v for k, v in sorted(employee_percent_dict.items(), key=lambda item: item[1])}
     if len(employee_percent_dict) % 2 == 0:
         employee_percent_dict[len(employee_percent_dict) // 2] = 0
