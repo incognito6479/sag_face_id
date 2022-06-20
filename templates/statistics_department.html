@@ -120,8 +120,12 @@
                     'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
                 },
                 beforeSend: function() {
+                    let date = new Date()
+                    console.log(date)
                 },
                 complete: function() {
+                    let date = new Date()
+                    console.log(date)
                 },
                 success: function(e) {
                     let data_json = JSON.parse(e);
