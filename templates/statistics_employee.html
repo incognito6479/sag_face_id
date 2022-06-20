@@ -33,21 +33,21 @@
                               <a class="nav-link active" id="top-home-tab" data-bs-toggle="tab"
                                  href="#top-home" role="tab" aria-controls="top-home" aria-selected="true">
                                   <i class="icon-stats-up"></i>
-                                  Топ лучшие
+                                  Топ 10 лучших
                               </a>
                           </li>
                           <li class="nav-item">
                               <a class="nav-link" id="profile-top-tab" data-bs-toggle="tab"
                                  href="#top-profile" role="tab" aria-controls="top-profile" aria-selected="false">
                                   <i class="icon-stats-down"></i>
-                                  Топ худшие
+                                  Топ 10 самые низкие
                               </a>
                           </li>
                       </ul>
                       <div class="tab-content" id="top-tabContent">
                           <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
                               <div class="text-center">
-                                  <h4 class="mb-5">Топ-10 лучших сотрудников этого месяца</h4>
+                                  <h4 class="mb-5">Топ-10 сотрудников с самым высоким рейтингом за предыдущий месяц</h4>
                               </div>
                               <div class="row">
                                   <div class="col-md-6">
@@ -64,8 +64,8 @@
                                               </thead>
                                               <tbody class="statistics_attendance_highest_tbody">
                                                 <tr>
-                                                    <th colspan="3" class="text-center">
-                                                        <h2 class="statistics_attendance_highest_loader d-none"><i class="fa fa-spin fa-spinner"></i></h2>
+                                                    <th colspan="4" class="text-center">
+                                                        <h2 class="statistics_attendance_highest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
                                                         <h5 class="statistics_attendance_highest_no_entry d-none">Нет посещаемости</h5>
                                                     </th>
                                                 </tr>
@@ -87,7 +87,7 @@
                                               </thead>
                                               <tbody class="statistics_working_hours_highest_tbody">
                                                 <tr>
-                                                    <th colspan="3" class="text-center">
+                                                    <th colspan="4" class="text-center">
                                                         <h2 class="statistics_attendance_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
                                                         <h5 class="statistics_working_hours_highest_no_entry d-none">Нет рабочего времени</h5>
                                                     </th>
@@ -100,7 +100,7 @@
                           </div>
                           <div class="tab-pane fade" id="top-profile" role="tabpanel" aria-labelledby="profile-top-tab">
                               <div class="text-center">
-                                  <h4 class="mb-5">Топ-10 худших сотрудников в этом месяце</h4>
+                                  <h4 class="mb-5">Топ-10 сотрудников с самым низким рейтингом за предыдущий месяц</h4>
                               </div>
                               <div class="row">
                                   <div class="col-md-6">
@@ -117,7 +117,7 @@
                                               </thead>
                                               <tbody class="statistics_attendance_lowest_tbody">
                                                 <tr>
-                                                    <th colspan="3" class="text-center">
+                                                    <th colspan="4" class="text-center">
                                                         <h2 class="statistics_attendance_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
                                                         <h5 class="statistics_attendance_lowest_no_entry d-none">Нет посещаемости</h5>
                                                     </th>
@@ -140,7 +140,7 @@
                                               </thead>
                                               <tbody class="statistics_working_hours_lowest_tbody">
                                                 <tr>
-                                                    <th colspan="3" class="text-center">
+                                                    <th colspan="4" class="text-center">
                                                         <h2 class="statistics_working_hours_lowest_loader"><i class="fa fa-spin fa-spinner"></i></h2>
                                                         <h5 class="statistics_working_hours_lowest_no_entry d-none">Нет рабочего времени</h5>
                                                     </th>
@@ -170,27 +170,26 @@
                     'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
                 },
                 beforeSend: function() {
-                    $('.statistics_attendance_highest_loader').removeClass('d-none');
-                    $('.statistics_attendance_lowest_loader').removeClass('d-none');
+                    let date = new Date()
+                    console.log(date)
                 },
                 complete: function() {
-                    {#$('.statistics_attendance_highest_no_entry').addClass('d-none');#}
-                    {#$('.statistics_attendance_lowest_no_entry').addClass('d-none');#}
+                    let date = new Date()
+                    console.log(date)
                 },
                 success: function(e) {
                     let data_json = JSON.parse(e);
                     let highest_attendance = data_json['highest_attendance'];
                     let lowest_attendance = data_json['lowest_attendance'];
-                    if (Object.keys(highest_attendance).length === 0) {
+                    if (highest_attendance.length === 0) {
                         $('.statistics_attendance_highest_no_entry').removeClass('d-none')
+                        $('.statistics_attendance_highest_loader').addClass('d-none')
                     } else {
                         let template = ``;
-                        let loop_counter = 0
-                        for(let key in highest_attendance) {
-                            loop_counter += 1;
+                        for(let key=0; key<highest_attendance.length; key++) {
                             template += `
                                 <tr>
-                                    <td>${loop_counter}</td>
+                                    <td>${key+1}</td>
                                     <td>${highest_attendance[key]['full_name']}</td>
                                     <td>${highest_attendance[key]['department']}</td>
                                     <td>${highest_attendance[key]['percentage']} %</td>
@@ -199,16 +198,15 @@
                         }
                         $('.statistics_attendance_highest_tbody').html(template)
                     }
-                    if (Object.keys(lowest_attendance).length === 0) {
+                    if (lowest_attendance.length === 0) {
                         $('.statistics_attendance_lowest_no_entry').removeClass('d-none')
+                        $('.statistics_attendance_lowest_loader').addClass('d-none')
                     } else {
                         let template = ``;
-                        let loop_counter = 0
-                        for(let key in lowest_attendance) {
-                            loop_counter += 1;
+                        for(let key=0; key<lowest_attendance.length; key++) {
                             template += `
                                 <tr>
-                                    <td>${loop_counter}</td>
+                                    <td>${key+1}</td>
                                     <td>${lowest_attendance[key]['full_name']}</td>
                                     <td>${lowest_attendance[key]['department']}</td>
                                     <td>${lowest_attendance[key]['percentage']} %</td>
@@ -230,27 +228,26 @@
                     'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
                 },
                 beforeSend: function() {
-                    $('.statistics_working_hours_highest_loader').removeClass('d-none');
-                    $('.statistics_working_hours_lowest_loader').removeClass('d-none');
+                    let date = new Date()
+                    console.log(date)
                 },
                 complete: function() {
-                    {#$('.statistics_working_hours_highest_no_entry').addClass('d-none');#}
-                    {#$('.statistics_working_hours_lowest_no_entry').addClass('d-none');#}
+                    let date = new Date()
+                    console.log(date)
                 },
                 success: function(e) {
                     let data_json = JSON.parse(e);
                     let highest_working_hours = data_json['highest_working_hours'];
                     let lowest_working_hours = data_json['lowest_working_hours'];
-                    if (Object.keys(highest_working_hours).length === 0) {
+                    if (highest_working_hours.length === 0) {
                         $('.statistics_working_hours_highest_no_entry').removeClass('d-none')
+                        $('.statistics_attendance_lowest_loader').addClass('d-none')
                     } else {
                         let template = ``;
-                        let loop_counter = 0
-                        for(let key in highest_working_hours) {
-                            loop_counter += 1;
+                        for(let key=0; key<highest_working_hours.length; key++) {
                             template += `
                                 <tr>
-                                    <td>${loop_counter}</td>
+                                    <td>${key+1}</td>
                                     <td>${highest_working_hours[key]['full_name']}</td>
                                     <td>${highest_working_hours[key]['department']}</td>
                                     <td>${highest_working_hours[key]['percentage']} %</td>
@@ -259,16 +256,15 @@
                         }
                         $('.statistics_working_hours_highest_tbody').html(template)
                     }
-                    if (Object.keys(lowest_working_hours).length === 0) {
+                    if (lowest_working_hours.length === 0) {
                         $('.statistics_working_hours_lowest_no_entry').removeClass('d-none')
+                        $('.statistics_working_hours_lowest_loader').addClass('d-none')
                     } else {
                         let template = ``;
-                        let loop_counter = 0
-                        for(let key in lowest_working_hours) {
-                            loop_counter += 1;
+                        for(let key=0; key<lowest_working_hours.length; key++) {
                             template += `
                                 <tr>
-                                    <td>${loop_counter}</td>
+                                    <td>${key+1}</td>
                                     <td>${lowest_working_hours[key]['full_name']}</td>
                                     <td>${lowest_working_hours[key]['department']}</td>
                                     <td>${lowest_working_hours[key]['percentage']} %</td>

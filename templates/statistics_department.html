@@ -120,27 +120,22 @@
                     'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
                 },
                 beforeSend: function() {
-                    {#$('.statistics_attendance_highest_loader').removeClass('d-none');#}
-                    {#$('.statistics_attendance_lowest_loader').removeClass('d-none');#}
                 },
                 complete: function() {
-                    {#$('.statistics_attendance_highest_no_entry').addClass('d-none');#}
-                    {#$('.statistics_attendance_lowest_no_entry').addClass('d-none');#}
                 },
                 success: function(e) {
                     let data_json = JSON.parse(e);
                     let highest_attendance = data_json['highest'];
                     let lowest_attendance = data_json['lowest'];
-                    if (Object.keys(highest_attendance).length === 0) {
+                    if (highest_attendance.length === 0) {
                         $('.statistics_attendance_highest_no_entry').removeClass('d-none')
+                        $('.statistics_working_hours_lowest_loader').addClass('d-none')
                     } else {
                         let template = ``;
-                        let loop_counter = 0
-                        for(let key in highest_attendance) {
-                            loop_counter += 1;
+                        for(let key=0; key<highest_attendance.length; key++) {
                             template += `
                                 <tr>
-                                    <td>${loop_counter}</td>
+                                    <td>${key+1}</td>
                                     <td>${highest_attendance[key]['name']}</td>
                                     <td>${highest_attendance[key]['percentage']} %</td>
                                 </tr>
@@ -148,16 +143,15 @@
                         }
                         $('.statistics_attendance_highest_tbody').html(template)
                     }
-                    if (Object.keys(lowest_attendance).length === 0) {
+                    if (lowest_attendance.length === 0) {
                         $('.statistics_attendance_lowest_no_entry').removeClass('d-none')
+                        $('.statistics_working_hours_lowest_loader').addClass('d-none')
                     } else {
                         let template = ``;
-                        let loop_counter = 0
-                        for(let key in lowest_attendance) {
-                            loop_counter += 1;
+                        for(let key=0; key<lowest_attendance.length; key++) {
                             template += `
                                 <tr>
-                                    <td>${loop_counter}</td>
+                                    <td>${key+1}</td>
                                     <td>${lowest_attendance[key]['name']}</td>
                                     <td>${lowest_attendance[key]['percentage']} %</td>
                                 </tr>
