@@ -418,6 +418,7 @@ def get_statistics_employee_working_hours_ajax():
 
 
 def save_importer_csv_to_attendance():
+    print('helpers started')
     csv_file = open('media/attendance/importer.csv')
     csv_reader = csv.reader(csv_file)
     rows = []
@@ -484,4 +485,5 @@ def save_importer_csv_to_attendance():
     get_statistics_department()
     get_statistics_employee_attendance_ajax()
     get_statistics_employee_working_hours_ajax()
+    print('helpers ended')
     return
