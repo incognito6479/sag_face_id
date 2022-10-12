@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h3>Список больничных сотрудников</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Календарь</a></li>
+                    <li class="breadcrumb-item">Список больничных сотрудников</li>
+                  </ol>
+                </div>
+{#                  {% if request.user.is_staff %}#}
+                  <div class="col-md-6 text-end">
+                      <button class="btn btn-primary" type="button" data-bs-toggle="modal"
+                              data-original-title="test" data-bs-target="#exampleModal">
+                          Добавить больничный
+                      </button>
+                  </div>
+{#                  {% endif %}#}
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row project-cards">
+              <div class="col-md-12 project-list">
+                <div class="card">
+                  <div class="row justify-content-end align-items-center">
+                    <div class="col-md-4 p-0 m-0">
+                        <form class="d-flex justify-content-end"
+                        action="{% url 'vacation_view' %}" method="GET">
+                            {% csrf_token %}
+                              <div class="col-md-8 ms-2">
+                                <div>
+                                    <select class="form-control" required name="employee_id">
+                                        <option value="" selected disabled>Поиск по сотрудникам</option>
+                                        {% for i in sick_leave_obj_user %}
+                                            <option value="{{ i.employee_id }}">{{ i.employee__full_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                              </div>
+                            <div class="ms-3">
+                                <button class="btn btn-info px-2" type="submit"><i class="icofont icofont-search"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="tab-content" id="top-tabContent">
+                      <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
+                        <div class="row">
+                            <div class="table-responsive">
+                                <h4>История больничных</h4>
+                                <table class="table">
+                                  <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Сотрудник</th>
+                                        <th scope="col">Дата от:</th>
+                                        <th scope="col">Дата до:</th>
+                                        <th scope="col">Разница дней</th>
+                                        <th scope="col">Статус</th>
+                                        <th scope="col">Подробно</th>
+                                        {% if request.user.is_staff %}
+                                            <th scope="col">Действия</th>
+                                        {% endif %}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {% for i in sick_leave_obj %}
+                                        <tr>
+                                            <td scope="row">{{ forloop.counter }}</td>
+                                            <td>
+                                                <a href="{% url 'employee_detail_view' i.employee_id %}">
+                                                    {{ i.employee }}
+                                                </a>
+                                            </td>
+                                            <td>{{ i.date_from|default:"-" }}</td>
+                                            <td>{{ i.date_to|default:"-" }}</td>
+                                            <td>{{ i.difference|default:"-" }}</td>
+                                            <td>
+                                                <button class="btn btn-sm
+                                                    {% if i.status == 'waiting' %}
+                                                        btn-warning
+                                                        {% elif i.status == 'rejected' %}
+                                                            btn-danger
+                                                        {% else %}
+                                                            btn-success
+                                                    {% endif %}">
+                                                    {{ i.get_status_display|default:"-" }}
+                                                </button>
+                                            </td>
+                                            <td>{{ i.comment|default:"-" }}</td>
+                                            {% if request.user.is_staff %}
+                                                <td>
+                                                    <a href="{% url 'sick_leave_update_view' i.id %}"
+                                                         class="btn-sm btn-primary py-2 ms-3">
+                                                          <i class="fa fa-pencil"></i>
+                                                      </a>
+                                                </td>
+                                            {% endif %}
+                                        </tr>
+                                        {% empty %}
+                                        <tr class="text-center">
+                                            <td colspan="6">
+                                                Нет записи
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                            </div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Добавить больничный</h5>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <form action="{% url 'sick_leave_view'  %}" method="POST" id="business_trip_form">
+                      {% csrf_token %}
+                    <div class="form-group m-0 p-0">
+                        <div class="col-md-12 mb-2">
+                         <input class="datepicker-here form-control digits" name="date_from"
+                         type="text" data-language="ru" data-multiple-dates-separator=", "
+                         data-position="bottom right" required placeholder="Дата от:">
+                        </div>
+                    </div>
+                    <div class="form-group m-0 p-0">
+                        <div class="col-md-12 mb-2">
+                         <input class="datepicker-here form-control digits" name="date_to"
+                         type="text" data-language="ru" data-multiple-dates-separator=", "
+                          data-position="bottom right" required placeholder="Дата до:">
+                     </div>
+                    </div>
+                    <div class="form-group m-0 p-0">
+                        <div class="col-md-12 mb-2">
+                         <textarea class="form-control digits" name="comment" type="text"
+                                   data-language="ru" required placeholder="Подробно:"></textarea>
+                        </div>
+                    </div>
+                  {% if request.user.is_staff %}
+                      <div class="form-group m-0 p-0">
+                          <select class="col-12 form-control" name="employee_add_selected" required>
+                            <option value="" selected disabled>---</option>
+                              {% for i in employee_obj %}
+                                <option value="{{ i.id }}">{{ i.full_name }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  {% endif %}
+                  </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary business_trip_form_btn" type="submit" form="business_trip_form">Добавить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+    </script>
+{% endblock extra_js %}

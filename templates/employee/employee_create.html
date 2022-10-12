@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static widget_tweaks %}
+
+{% block content %}
+    <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                {% if update %}
+                    <h3 class="breadcrumb-item">Изменение нового сотрудника</h3>
+                    {% else %}
+                      <h3>Создание нового сотрудника</h3>
+                  {% endif %}
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">Отделы</li>
+                    <li class="breadcrumb-item">Список отделов</li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'department_detail_view' department_id %}">
+                            {{ department_name }}
+                        </a>
+                    </li>
+                      {% if update %}
+                        <li class="breadcrumb-item">Изменение нового сотрудника</li>
+                        {% else %}
+                          <li class="breadcrumb-item">Создание нового сотрудника</li>
+                      {% endif %}
+                  </ol>
+                </div>
+              {% if update %}
+                  <div class="col-md-6">
+                        <button class="btn btn-danger" type="button" data-bs-toggle="modal"
+                              data-original-title="test" data-bs-target="#exampleModal">
+                          Удалить сотрудника
+                      </button>
+                  </div>
+              {% endif %}
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="form theme-form">
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% for f in form %}
+                                <div class="row">
+                                    <div class="col">
+                                      <div class="mb-3">
+                                        <label>{{ f.label_tag }}</label>
+                                        {{ f|add_class:'form-control'|attr:'rows' }}
+                                      </div>
+                                    </div>
+                                  </div>
+                            {% endfor %}
+                          <div class="row">
+                            <div class="col">
+                              <div class="text-end">
+                                <button class="btn btn-secondary me-3" type="submit">
+                                    Сохранить
+                                </button>
+                               <a class="btn btn-danger"
+                                href="{% url 'department_detail_view' department_id %}">
+                                    Отмена
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+        </div>
+
+    {% if update %}
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Удаление сотрудника</h5>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <h6>Удаление этого сотрудника приведет к удалению всей его посещаемости и другой информации.</h6>
+                      <form action="{% url 'employee_delete_view' employee_id department_id %}" method="POST" id="business_trip_form">
+                          {% csrf_token %}
+                          <input type="hidden" name="DELETE">
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-danger business_trip_form_btn" type="submit" form="business_trip_form">Удалить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+    {% endif %}
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        $(document).ready(function(){
+            let username_error = "{{ username_error }}";
+            let username_value = "{{ username_value }}";
+            if (username_error === '1') {
+                alert("Это login уже занято, введите другое")
+            }
+            if (username_value) {
+                $('#id_username').val(username_value)
+            }
+        })
+    </script>
+{% endblock extra_js %}

@@ -15,19 +15,18 @@
                 <div class="col-sm-6">
                   <h3>Список командировок</h3>
                   <ol class="breadcrumb">
-                    <li class="breadcrumb-item">Отделы</li>
-                    <li class="breadcrumb-item">Список отделов</li>
+                    <li class="breadcrumb-item">Календарь</li>
                     <li class="breadcrumb-item">Список командировок</li>
                   </ol>
                 </div>
-                  {% if perms.faceapp.can_add_business_trip and request.user.department_id == department_id %}
+{#                  {% if request.user.is_staff %}#}
                       <div class="col-md-6 text-end">
                           <button class="btn btn-primary" type="button" data-bs-toggle="modal"
                                   data-original-title="test" data-bs-target="#exampleModal">
                               Добавить командировку
                           </button>
                       </div>
-                  {% endif %}
+{#                  {% endif %}#}
               </div>
             </div>
           </div>
@@ -43,10 +42,10 @@
                             {% csrf_token %}
                               <div class="col-md-8 ms-2">
                                 <div>
-                                    <select class="form-control" required name="employee_id">
+                                    <select class="form-control" name="employee_id">
                                         <option value="" selected disabled>Поиск по сотрудникам</option>
                                         {% for i in employees %}
-                                            <option value="{{ i.employee_id }}">{{ i.employee__full_name }}</option>
+                                            <option value="{{ i.id }}">{{ i.full_name }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -71,24 +70,56 @@
                                     <tr>
                                         <th scope="col">#</th>
                                         <th scope="col">Сотрудник</th>
+                                        <th scope="col">Отдел</th>
                                         <th scope="col">Дата от:</th>
                                         <th scope="col">Дата до:</th>
                                         <th scope="col">Количество дней</th>
+                                        <th scope="col">Статус</th>
+                                        <th scope="col">Подробно</th>
+                                        {% if request.user.is_staff %}
+                                            <th scope="col">Действия</th>
+                                        {% endif %}
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {% for i in business_trips %}
                                         <tr>
                                             <td scope="row">{{ forloop.counter }}</td>
-                                            <td>{{ i.employee.full_name }}</td>
+                                            <td>
+                                                <a href="{% url 'employee_detail_view' i.employee_id %}">
+                                                    {{ i.employee.full_name }}
+                                                </a>
+                                            </td>
+                                            <td>{{ i.employee.department }}</td>
                                             <td>{{ i.date_from|default:"-" }}</td>
                                             <td>{{ i.date_to|default:"-" }}</td>
                                             <td>{{ i.difference|default:"-" }}</td>
+                                            <td>
+                                                <button class="btn btn-sm
+                                                    {% if i.status == 'waiting' %}
+                                                        btn-warning
+                                                        {% elif i.status == 'rejected' %}
+                                                            btn-danger
+                                                        {% else %}
+                                                            btn-success
+                                                    {% endif %}">
+                                                    {{ i.get_status_display|default:"-" }}
+                                                </button>
+                                            </td>
+                                            <td>{{ i.comment|default:"-" }}</td>
+                                            {% if request.user.is_staff %}
+                                                <td>
+                                                    <a href="{% url 'business_trip_update_view' i.id %}"
+                                                         class="btn-sm btn-primary py-2 ms-3">
+                                                          <i class="fa fa-pencil"></i>
+                                                      </a>
+                                                </td>
+                                            {% endif %}
                                         </tr>
                                         {% empty %}
                                         <tr class="text-center">
-                                            <td colspan="5">
-                                                Нет командировки
+                                            <td colspan="7">
+                                                Нет записи
                                             </td>
                                         </tr>
                                     {% endfor %}
@@ -108,11 +139,11 @@
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Добавить командировку</h5>
                 <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                  <form action="{% url 'business_trip_view' department_id %}" method="POST" id="business_trip_form">
+                  <form action="{% url 'business_trip_view' %}" method="POST" id="business_trip_form">
                       {% csrf_token %}
                     <div class="form-group m-0 p-0">
                         <div class="col-md-12 mb-2">
@@ -128,6 +159,13 @@
                           data-position="bottom right" required placeholder="Дата до:">
                      </div>
                     </div>
+                    <div class="form-group m-0 p-0">
+                        <div class="col-md-12 mb-2">
+                         <textarea class="form-control digits" name="comment" type="text"
+                                   data-language="ru" required placeholder="Подробно:"></textarea>
+                     </div>
+                    </div>
+                  {% if request.user.is_staff %}
                       <div class="form-group m-0 p-0">
                           <select class="js-example-placeholder-multiple col-sm-12 employee_select_2_id"
                                   multiple="multiple" name="employees" required>
@@ -137,6 +175,7 @@
                           </select>
                             <input type="hidden" class="employee_ids_from_select2" name="employee_ids_from_select2" value="">
                       </div>
+                  {% endif %}
                   </form>
               </div>
               <div class="modal-footer">

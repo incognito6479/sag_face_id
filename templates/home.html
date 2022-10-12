@@ -97,9 +97,11 @@
                                             </b>
                                         </h5>
                                     </div>
+                                {% if request.user.is_superuser %}
                                     <div>
                                         <h5>Количество всех сотрудников: <b>{{ employee_count }}</b></h5>
                                     </div>
+                                {% endif %}
                                 </div>
                                 <table class="table">
                                   <thead>

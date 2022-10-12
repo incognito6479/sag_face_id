@@ -91,6 +91,7 @@
                                                     <th scope="col">Сотрудник</th>
                                                     <th scope="col">Отдел</th>
                                                     <th scope="col">%</th>
+                                                    <th scope="col">Часы</th>
                                                 </tr>
                                               </thead>
                                               <tbody class="statistics_working_hours_highest_tbody">
@@ -100,6 +101,7 @@
                                                         <td>{{ i.name }}</td>
                                                         <td>{{ i.department }}</td>
                                                         <td>{{ i.percentage }} %</td>
+                                                        <td>{{ i.hours|default:"-" }}</td>
                                                     </tr>
                                                     {% empty %}
                                                         <tr>

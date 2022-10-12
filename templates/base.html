@@ -137,15 +137,22 @@
                       <li><a href="{% url 'shift_time_view' %}">Сменный рабочий</a></li>
                     </ul>
                   </li>
-                  <li class="dropdown">
-                    <a class="nav-link menu-title" href="javascript:void(0)">
-                        <i data-feather="airplay"></i>
-                        <span>Отделы</span>
-                    </a>
-                    <ul class="nav-submenu menu-content">
-                      <li><a href="{% url 'department_list_view' %}">Список всех отделов</a></li>
-                    </ul>
-                  </li>
+                    {% if request.user.is_superuser %}
+                      <li class="dropdown">
+                        <a class="nav-link menu-title" href="{% url 'department_list_view' %}">
+                            <i data-feather="airplay"></i>
+                            <span>Все отделы</span>
+                        </a>
+                      </li>
+                    {% endif %}
+                    {% if request.user.is_staff %}
+                      <li class="">
+                        <a class="nav-link menu-title" href="{% url 'department_detail_view' request.user.department_id %}">
+                            <i data-feather="airplay"></i>
+                            <span>Мой отдел</span>
+                        </a>
+                      </li>
+                    {% endif %}
                     <li class="dropdown">
                     <a class="nav-link menu-title" href="javascript:void(0)">
                         <i class="fa fa-calendar me-3"></i>
@@ -154,6 +161,8 @@
                     <ul class="nav-submenu menu-content">
                       <li><a href="{% url 'calendar_view' %}">Выходные</a></li>
                       <li><a href="{% url 'vacation_view' %}">Отпуски</a></li>
+                      <li><a href="{% url 'sick_leave_view' %}">Больничные</a></li>
+                      <li><a href="{% url 'business_trip_view' %}">Командировки</a></li>
                     </ul>
                   </li>
                     <li class="dropdown">

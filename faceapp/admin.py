@@ -1,6 +1,6 @@
 from django.contrib import admin
-from faceapp.models import Employee, Attendance, WorkingHours, Department, DepartmentShiftTime, EmployeeVacation, CalendarWorkingDays, \
-    CsvImporter, EmployeeBusinessTrip, User
+from faceapp.models import Employee, Attendance, WorkingHours, Department, DepartmentShiftTime, EmployeeVacation, \
+    CalendarWorkingDays, CsvImporter, EmployeeBusinessTrip, User, EmployeeSickLeave
 from django.contrib.auth.models import Group
 
 
@@ -8,11 +8,18 @@ admin.site.unregister(Group)
 admin.site.register(User)
 
 
+@admin.register(EmployeeSickLeave)
+class EmployeeSickLeaveModelAdmin(admin.ModelAdmin):
+    list_display = "employee", "date_from", "date_to", "difference", "status"
+    exclude = ('difference',)
+
+
 @admin.register(Employee)
 class EmployeeModelAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'middle_name', 'department', 'working_hours', 'status')
+    list_display = ('first_name', 'last_name', 'middle_name', 'department', 'working_hours', 'status', 'created_at')
     search_fields = ('full_name', 'person_id', 'card_number')
     exclude = ('full_name',)
+    # list_editable = ['created_at']
 
 
 # @admin.register(Attendance)
@@ -33,7 +40,7 @@ class DepartmentModelAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeBusinessTrip)
 class EmployeeBusinessTripModelAdmin(admin.ModelAdmin):
-    list_display = "employee", "date_from", "date_to", "difference"
+    list_display = "employee", "date_from", "date_to", "difference", "status"
     exclude = ('difference',)
 
 
@@ -49,7 +56,7 @@ class DepartmentShiftTimeModelAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeVacation)
 class EmployeeVacationModelAdmin(admin.ModelAdmin):
-    list_display = "employee", "date_from", "date_to", "difference"
+    list_display = "employee", "date_from", "date_to", "difference", "status"
     exclude = ('difference',)
 
 

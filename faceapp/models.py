@@ -1,4 +1,3 @@
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.contrib.auth.models import (
@@ -8,6 +7,12 @@ from django.contrib.auth.models import (
 STATISTICS_TYPE = (
     ('highest', 'highest'),
     ('lowest', 'lowest')
+)
+
+EMPLOYEE_CONDITION_STATUS = (
+    ('waiting', 'В ожидание'),
+    ('accepted', 'Принято'),
+    ('rejected', 'Отклонено'),
 )
 
 """
@@ -31,12 +36,14 @@ class UserManager(BaseUserManager):
         u.save(using=self._db)
         return u
 
+
 """
 When Creating a simple User use manage.py createsuperuser and remove is_superuser is_staff
 """
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(verbose_name='Username', max_length=255, unique=True)
     department = models.ForeignKey('faceapp.Department', null=True, blank=True, on_delete=models.PROTECT)
+    employee = models.ForeignKey('faceapp.Employee', null=True, blank=True, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -73,8 +80,8 @@ class Employee(models.Model):
     department = models.ForeignKey('faceapp.Department', related_name='employee_department', on_delete=models.PROTECT, verbose_name="Отдел")
     working_hours = models.ForeignKey('faceapp.WorkingHours', on_delete=models.PROTECT, verbose_name="Рабочее время")
     person_id = models.CharField(max_length=1000, unique=True, verbose_name="ID сотрудника", blank=True, null=True)
-    card_number = models.CharField(max_length=1000, unique=True, verbose_name="Номер карты", blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    card_number = models.CharField(max_length=1000, unique=True, verbose_name="Номер карты 1c", blank=True, null=True)
+    created_at = models.DateField(verbose_name="Дата присоединения")
     updated_at = models.DateTimeField(auto_now=True)
     first_name = models.CharField(max_length=255, verbose_name="Имя")
     last_name = models.CharField(max_length=255, verbose_name="Фамилия")
@@ -104,7 +111,7 @@ class Attendance(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey('faceapp.Employee', on_delete=models.PROTECT, verbose_name="Сотрудник")
+    user = models.ForeignKey('faceapp.Employee', on_delete=models.CASCADE, verbose_name="Сотрудник")
     check_status = models.CharField(max_length=255, choices=EMPLOYEE_CHECK_STATUS, verbose_name='Состояние входа')
     time = models.DateTimeField(verbose_name="Время", blank=True, null=True)
 
@@ -117,7 +124,7 @@ class Attendance(models.Model):
 
 
 class DepartmentShiftTime(models.Model):
-    department = models.ForeignKey('faceapp.Department', on_delete=models.PROTECT, verbose_name="Отдел",
+    department = models.ForeignKey('faceapp.Department', on_delete=models.CASCADE, verbose_name="Отдел",
                                    related_name='shift_time_department')
     shift_time = models.BooleanField(default=True, verbose_name="Работа по сменам")
 
@@ -133,6 +140,7 @@ class CalendarWorkingDays(models.Model):
     date_from = models.DateField(verbose_name="Дата от")
     date_to = models.DateField(verbose_name="Дата до", blank=True, null=True)
     difference = models.IntegerField(verbose_name="Количество дней", default=0)
+    cause = models.CharField(max_length=255, default="---", blank=True, null=True)
 
     def __str__(self):
         return f"{self.date_from} - {self.date_to}"
@@ -154,11 +162,12 @@ class CalendarWorkingDays(models.Model):
 class EmployeeVacation(models.Model):
     date_from = models.DateField(verbose_name="Дата от")
     date_to = models.DateField(verbose_name="Дата до", blank=True, null=True)
-    employee = models.ForeignKey('faceapp.Employee', on_delete=models.PROTECT, verbose_name="Сотрудник")
+    employee = models.ForeignKey('faceapp.Employee', on_delete=models.CASCADE, verbose_name="Сотрудник")
+    status = models.CharField(blank=False, null=True, choices=EMPLOYEE_CONDITION_STATUS, max_length=255)
     difference = models.IntegerField(verbose_name="Количество дней", default=0)
 
     def __str__(self):
-        return f"{self.employee}"
+        return f"{self.employee} / {self.status}"
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -173,14 +182,40 @@ class EmployeeVacation(models.Model):
         verbose_name_plural = "Отпуск"
 
 
+class EmployeeSickLeave(models.Model):
+    date_from = models.DateField(verbose_name="Дата от")
+    date_to = models.DateField(verbose_name="Дата до", blank=True, null=True)
+    employee = models.ForeignKey('faceapp.Employee', on_delete=models.CASCADE, verbose_name="Сотрудник")
+    difference = models.IntegerField(verbose_name="Количество дней", default=0)
+    status = models.CharField(blank=False, null=True, choices=EMPLOYEE_CONDITION_STATUS, max_length=255)
+    comment = models.CharField(max_length=255, default="---")
+
+    def __str__(self):
+        return f"{self.employee} / {self.status}"
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.date_to:
+            self.difference = 1
+        else:
+            self.difference = abs(self.date_to - self.date_from).days + 1
+        super(EmployeeSickLeave, self).save()
+
+    class Meta:
+        verbose_name = "Больничный"
+        verbose_name_plural = "Больничные"
+
+
 class EmployeeBusinessTrip(models.Model):
     date_from = models.DateField(verbose_name="Дата от")
     date_to = models.DateField(verbose_name="Дата до", blank=True, null=True)
-    employee = models.ForeignKey('faceapp.Employee', on_delete=models.PROTECT, verbose_name="Сотрудник")
+    employee = models.ForeignKey('faceapp.Employee', on_delete=models.CASCADE, verbose_name="Сотрудник")
     difference = models.IntegerField(verbose_name="Количество дней", default=0)
+    status = models.CharField(blank=False, null=True, choices=EMPLOYEE_CONDITION_STATUS, max_length=255)
+    comment = models.CharField(max_length=255, default="---")
 
     def __str__(self):
-        return f"{self.employee}"
+        return f"{self.employee} / {self.status}"
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -235,6 +270,7 @@ class EmployeeStatisticsWorkingHours(models.Model):
     type = models.CharField(max_length=100, choices=STATISTICS_TYPE)
     name = models.CharField(max_length=255)
     department = models.CharField(max_length=255)
+    hours = models.IntegerField(null=True)
     percentage = models.IntegerField()
 
     def __str__(self):

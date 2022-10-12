@@ -73,6 +73,7 @@
                                       <th scope="col">Дата от:</th>
                                       <th scope="col">Дата до:</th>
                                       <th scope="col">Разница дней</th>
+                                      <th scope="col">Причина</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -82,11 +83,12 @@
                                             <td>{{ i.date_from }}</td>
                                             <td>{{ i.date_to|default:"-" }}</td>
                                             <td>{{ i.difference }}</td>
+                                            <td>{{ i.cause }}</td>
                                         </tr>
                                         {% empty %}
                                         <tr class="text-center">
-                                            <td colspan="4">
-                                                Нет выходных
+                                            <td colspan="5">
+                                                Нет записи
                                             </td>
                                         </tr>
                                     {% endfor %}

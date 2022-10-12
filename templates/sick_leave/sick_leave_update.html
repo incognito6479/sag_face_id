@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static widget_tweaks %}
+
+{% block content %}
+    <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-header">
+              <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="breadcrumb-item">Редактирование больничных</h3>
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">Календарь</li>
+                    <li class="breadcrumb-item">Список больничных</li>
+                    <li class="breadcrumb-item">Редактирование больничных</li>
+                  </ol>
+                </div>
+                  <div class="col-md-6">
+                        <button class="btn btn-danger" type="button" data-bs-toggle="modal"
+                              data-original-title="test" data-bs-target="#exampleModal">
+                          Удалить больничный
+                      </button>
+                  </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="form theme-form">
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% for f in form %}
+                                <div class="row">
+                                    <div class="col">
+                                      <div class="mb-3">
+                                        <label>{{ f.label_tag }}</label>
+                                        {{ f|add_class:'form-control'|attr:'rows' }}
+                                      </div>
+                                    </div>
+                                  </div>
+                            {% endfor %}
+                          <div class="row">
+                            <div class="col">
+                              <div class="text-end">
+                                <button class="btn btn-secondary me-3" type="submit">
+                                    Сохранить
+                                </button>
+                               <a class="btn btn-danger"
+                                href="{% url 'sick_leave_view' %}">
+                                    Отмена
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+        </div>
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Удаление больничных</h5>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <h6>Удаление этого больничного может привести к снижению процента посещаемости этого сотрудника.</h6>
+                  <form action="{% url 'sick_leave_delete_view' pk dep_id %}" method="POST" id="business_trip_form">
+                      {% csrf_token %}
+                      <input type="hidden" name="DELETE">
+                  </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-danger business_trip_form_btn" type="submit" form="business_trip_form">Удалить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+    </script>
+{% endblock extra_js %}

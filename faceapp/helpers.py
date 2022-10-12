@@ -1,10 +1,10 @@
 from faceapp.models import Employee, Attendance, CalendarWorkingDays, EmployeeVacation, CsvImporter, \
     EmployeeBusinessTrip, Department, DepartmentShiftTime, DepartmentStatistics, EmployeeStatisticsAttendance, \
-    EmployeeStatisticsWorkingHours
+    EmployeeStatisticsWorkingHours, EmployeeSickLeave
 from system.settings import SERVER_TIME_DIFFERENCE
 import csv
 import pytz
-from datetime import datetime
+import datetime
 from calendar import monthrange, monthcalendar
 
 utc = pytz.UTC
@@ -17,57 +17,72 @@ def get_statistics_employee_attendance():
     for i in shift_time_workers:
         shift_time_workers_ids.append(i['department_id'])
     employee_percentage_id = {}
-    current_month = datetime.now().month - 1
+    previous_month = datetime.datetime.now().month - 1
     for employee in employees:
         if employee.department_id not in shift_time_workers_ids:
             working_hours = employee.working_hours.end_time.hour - employee.working_hours.start_time.hour
             res = get_attendance_percentage_employee(employee.id)
-            days_must_work = res['hours_needed_to_work'][current_month]
-            overall_percentage = days_must_work // working_hours
-            attendances = res['attendances'].filter(time__month=current_month)
-            if str(res['employee_id']) == str(employee.id):
-                overall_percentage -= overall_percentage - \
-                                      (res['employee_worked_hours'][current_month] // working_hours)
-                for attendance in attendances:
-                    if attendance.check_status == "checkIn":
-                        check_start_time = find_start_time_difference(working_hours, attendance)
-                        if check_start_time:
-                            overall_percentage -= 0.5
-                    else:
-                        check_end_time = find_end_time_difference(working_hours, attendance)
-                        if check_end_time:
-                            overall_percentage -= 0.5
-            employee_percentage_id[employee.id] = int((overall_percentage * 100) // (days_must_work // working_hours))
-    # print(employee_percentage_id)
+            hours_needed_to_work = res['hours_needed_to_work'][previous_month]
+            overall_percentage_needed = hours_needed_to_work // working_hours
+            overall_percentage_worked = 0
+            attendances = res['attendances'].filter(time__month=previous_month)
+            for attendance in attendances:
+                if attendance.check_status == "checkIn":
+                    check_start_time = find_start_time_difference(working_hours, attendance)
+                    if not check_start_time:
+                        overall_percentage_worked += 0.5
+                else:
+                    check_end_time = find_end_time_difference(working_hours, attendance)
+                    if not check_end_time:
+                        overall_percentage_worked += 0.5
+            if overall_percentage_needed == 0:
+                employee_percentage_id[employee.id] = 100
+            else:
+                employee_percentage_id[employee.id] = int((overall_percentage_worked / overall_percentage_needed) * 100)
     return employee_percentage_id
 
 
 def dry_function(objects):
     custom_dict = {}
     for i in objects:
-        if i.date_from.month in custom_dict:
-            if i.difference >= 7:
-                i.difference = (i.difference - (i.difference % 7))
-            custom_dict[i.date_from.month] += i.difference
+        if i.date_from.month < i.date_to.month:
+            for j in range(i.date_from.month, i.date_to.month + 1):
+                if j == i.date_from.month:
+                    a = monthrange(datetime.datetime.now().year, i.date_from.month)[1]
+                    for k in range(i.date_from.day, a + 1):
+                        if i.date_from.month in custom_dict:
+                            custom_dict[i.date_from.month].append(k)
+                        else:
+                            custom_dict[i.date_from.month] = [k]
+                elif j == i.date_to.month:
+                    a = i.date_to.day
+                    for k in range(1, a + 1):
+                        if i.date_to.month in custom_dict:
+                            custom_dict[i.date_to.month].append(k)
+                        else:
+                            custom_dict[i.date_to.month] = [k]
+                else:
+                    a = monthrange(datetime.datetime.now().year, j)[1]
+                    for k in range(1, a + 1):
+                        if j in custom_dict:
+                            custom_dict[j].append(k)
+                        else:
+                            custom_dict[j] = [k]
         else:
-            if i.date_from.month < i.date_to.month:
-                a = monthrange(datetime.now().year, i.date_from.month)[1] - i.date_from.day
-                if a >= 7:
-                    a = (a - (a % 7))
-                custom_dict[i.date_from.month] = a
-                b = i.difference - (monthrange(datetime.now().year, i.date_from.month)[1] - i.date_from.day)
-                if b >= 7:
-                    b = (b - (b % 7))
-                custom_dict[i.date_from.month + 1] = b
-            else:
-                if i.difference >= 7:
-                    i.difference = (i.difference - (i.difference % 7))
-                custom_dict[i.date_from.month] = i.difference
+            for k in range(i.date_from.day, i.date_to.day + 1):
+                if i.date_from.month in custom_dict:
+                    custom_dict[i.date_from.month].append(k)
+                else:
+                    custom_dict[i.date_from.month] = [k]
     return custom_dict
 
 
 def get_number_of_holidays_in_month(holidays):
     return dry_function(holidays)
+
+
+def get_number_of_sick_leaves_in_month(sick_leaves, employee_id):
+    return dry_function(sick_leaves.filter(employee_id=employee_id))
 
 
 def get_number_of_vacations_in_month(vacations, employee_id):
@@ -78,42 +93,88 @@ def get_number_of_business_trips_in_month(business_trips, employee_id):
     return dry_function(business_trips.filter(employee_id=employee_id))
 
 
+def find_sunday_days(month):
+    list_days = []
+    day = datetime.date(datetime.datetime.now().year, month, 1)
+    single_day = datetime.timedelta(days=1)
+
+    while day.month == month:
+        if day.weekday() == 6:
+            list_days.append(day.day)
+        day += single_day
+    return list_days
+
+
 def get_attendance_percentage_employee(employee_id):
-    holidays = CalendarWorkingDays.objects.filter(date_from__year=datetime.now().year)
-    business_trips = EmployeeBusinessTrip.objects.filter(date_from__year=datetime.now().year)
-    vacations = EmployeeVacation.objects.filter(date_from__year=datetime.now().year)
+    sick_leaves = EmployeeSickLeave.objects.filter(date_from__year=datetime.datetime.now().year, status='accepted')
+    holidays = CalendarWorkingDays.objects.filter(date_from__year=datetime.datetime.now().year)
+    business_trips = EmployeeBusinessTrip.objects.filter(date_from__year=datetime.datetime.now().year, status='accepted')
+    vacations = EmployeeVacation.objects.filter(date_from__year=datetime.datetime.now().year, status='accepted')
     employee_obj = Employee.objects.filter(id=employee_id).select_related('working_hours').first()
     working_hours = employee_obj.working_hours.end_time.hour - employee_obj.working_hours.start_time.hour
-    attendances = Attendance.objects.filter(user_id=employee_id, time__year=datetime.now().year).order_by('time')
+    attendances = Attendance.objects.filter(user_id=employee_id, time__year=datetime.datetime.now().year).order_by('time')
     hours_needed_to_work_in_month = {}
     number_of_holidays_in_month = get_number_of_holidays_in_month(holidays)
+    number_of_sick_leaves_in_month = get_number_of_sick_leaves_in_month(sick_leaves, employee_id)
     number_of_vacations_in_month = get_number_of_vacations_in_month(vacations, employee_id)
     number_of_business_trips_in_month = get_number_of_business_trips_in_month(business_trips, employee_id)
     employee_worked_hours = {}
     percent = {}
+    hours_needed_subtract = {}
     for i in range(1, 13):
-        hours_needed_to_work_in_month[i] = monthrange(datetime.now().year, i)[1] \
-                                           - len([1 for i in monthcalendar(datetime.now().year, i) if i[6] != 0])
-    for key, value in number_of_business_trips_in_month.items():
-        hours_needed_to_work_in_month[key] -= value
-    for key, value in number_of_vacations_in_month.items():
-        hours_needed_to_work_in_month[key] -= value
-    for key, value in number_of_holidays_in_month.items():
-        hours_needed_to_work_in_month[key] -= value
+        hours_needed_to_work_in_month[i] = monthrange(datetime.datetime.now().year, i)[1] \
+                                           - len([1 for i in monthcalendar(datetime.datetime.now().year, i) if i[6] != 0])
+        if i in number_of_holidays_in_month:
+            if i in hours_needed_subtract:
+                hours_needed_subtract[i] += number_of_holidays_in_month[i]
+            else:
+                hours_needed_subtract[i] = number_of_holidays_in_month[i]
+        if i in number_of_sick_leaves_in_month:
+            if i in hours_needed_subtract:
+                hours_needed_subtract[i] += number_of_sick_leaves_in_month[i]
+            else:
+                hours_needed_subtract[i] = number_of_sick_leaves_in_month[i]
+        if i in number_of_vacations_in_month:
+            if i in hours_needed_subtract:
+                hours_needed_subtract[i] += number_of_vacations_in_month[i]
+            else:
+                hours_needed_subtract[i] = number_of_vacations_in_month[i]
+        if i in number_of_business_trips_in_month:
+            if i in hours_needed_subtract:
+                hours_needed_subtract[i] += number_of_business_trips_in_month[i]
+            else:
+                hours_needed_subtract[i] = number_of_business_trips_in_month[i]
+    for key, value in hours_needed_subtract.items():
+        for i in find_sunday_days(key):
+            if i in hours_needed_subtract[key]:
+                hours_needed_subtract[key].remove(i)
+    for key, value in hours_needed_subtract.items():
+        hours_needed_subtract[key] = len(set(hours_needed_subtract[key]))
     for key, value in hours_needed_to_work_in_month.items():
-        hours_needed_to_work_in_month[key] = value * working_hours
+        if key in hours_needed_subtract:
+            hours_needed_to_work_in_month[key] -= hours_needed_subtract[key]
     for key, value in hours_needed_to_work_in_month.items():
-        if value < 0:
+        multiplication = value * working_hours
+        if multiplication < 0:
             hours_needed_to_work_in_month[key] = 0
+        else:
+            hours_needed_to_work_in_month[key] = multiplication
+    for key, value in hours_needed_to_work_in_month.items():
+        if employee_obj.created_at.year == datetime.datetime.now().year:
+            if employee_obj.created_at.month > key:
+                hours_needed_to_work_in_month[key] = 0
     for i in range(1, 13):
-        number_of_days_in_month = monthrange(datetime.now().year, i)[1]
+        number_of_days_in_month = monthrange(datetime.datetime.now().year, i)[1]
         for day in range(1, number_of_days_in_month + 1):
             a = attendances.filter(time__month=i, time__day=day)
             check_in_hour = 0
             check_out_hour = 0
             for obj in a:
                 if obj.check_status == "checkIn":
-                    check_in_hour = obj.time.hour
+                    if obj.time.minute >= 45:
+                        check_in_hour = obj.time.hour + 1
+                    else:
+                        check_in_hour = obj.time.hour
                 else:
                     check_out_hour = obj.time.hour
             if i in employee_worked_hours:
@@ -124,7 +185,10 @@ def get_attendance_percentage_employee(employee_id):
         if value != 0:
             percent[key] = (employee_worked_hours[key] * 100) // value
         else:
-            percent[key] = 0
+            percent[key] = 100
+            if employee_obj.created_at.year == datetime.datetime.now().year:
+                if employee_obj.created_at.month >= key:
+                    percent[key] = 0
     res = {
         'percent': percent,
         'employee_worked_hours': employee_worked_hours,
@@ -132,7 +196,6 @@ def get_attendance_percentage_employee(employee_id):
         'attendances': attendances,
         'employee_id': employee_id
     }
-    # print(employee_worked_hours)
     return res
 
 
@@ -154,7 +217,10 @@ def get_attendance_percentage_department(department_id):
             else:
                 all_employee_worked_hours_needed[key] = value
     for key, value in all_employee_worked_hours_needed.items():
-        percentage[key] = (all_employee_worked_hours[key] * 100) // value
+        if value != 0:
+            percentage[key] = (all_employee_worked_hours[key] * 100) // value
+        else:
+            percentage[key] = 0
     return percentage
 
 
@@ -250,7 +316,7 @@ def get_statistics_department():
     shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
     shift_time_workers_ids = []
     department_id_and_percent = {}
-    current_month = datetime.now().month - 1
+    previous_month = datetime.datetime.now().month - 1
     for i in shift_time_workers:
         shift_time_workers_ids.append(i['department_id'])
     for i in department_obj:
@@ -259,7 +325,7 @@ def get_statistics_department():
             if len(res) == 0:
                 department_id_and_percent[i.id] = 0
             else:
-                department_id_and_percent[i.id] = res[current_month]
+                department_id_and_percent[i.id] = res[previous_month]
     department_id_and_percent = {k: v for k, v in sorted(department_id_and_percent.items(), key=lambda item: item[1])}
     if len(department_id_and_percent) % 2 == 0:
         department_id_and_percent[len(department_id_and_percent) // 2] = 0
@@ -369,12 +435,17 @@ def get_statistics_employee_working_hours_ajax():
     shift_time_workers_ids = []
     for i in shift_time_workers:
         shift_time_workers_ids.append(i['department_id'])
-    current_month = datetime.now().month - 1
+    previous_month = datetime.datetime.now().month - 1
     employee_percent_dict = {}
     for i in employee_obj:
         if i.department_id not in shift_time_workers_ids:
             resp = get_attendance_percentage_employee(i.id)
-            employee_percent_dict[resp['employee_id']] = resp['percent'][current_month]
+            employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][previous_month])] = \
+                resp['percent'][previous_month]
+    # resp = get_attendance_percentage_employee(2)
+    # employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][previous_month])] = \
+    #     resp['percent'][previous_month]
+    # print(employee_percent_dict)
     employee_percent_dict = {k: v for k, v in sorted(employee_percent_dict.items(), key=lambda item: item[1])}
     if len(employee_percent_dict) % 2 == 0:
         employee_percent_dict[len(employee_percent_dict) // 2] = 0
@@ -392,12 +463,20 @@ def get_statistics_employee_working_hours_ajax():
     highest_dict = []
     for key, value in lowest.items():
         for i in Employee.objects.select_related('department').filter(status=True):
-            if int(key) == int(i.id):
-                lowest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
+            if int(key[0]) == int(i.id):
+                lowest_dict.append({'percentage': value,
+                                    'full_name': i.full_name,
+                                    'department': i.department.name,
+                                    'hours': key[1]
+                                    })
     for key, value in highest.items():
         for i in Employee.objects.select_related('department').filter(status=True):
-            if int(key) == int(i.id):
-                highest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
+            if int(key[0]) == int(i.id):
+                highest_dict.append({'percentage': value,
+                                     'full_name': i.full_name,
+                                     'department': i.department.name,
+                                     'hours': key[1]
+                                     })
     highest_dict.reverse()
     context = {
         'lowest_working_hours': lowest_dict[0:10],
@@ -410,7 +489,8 @@ def get_statistics_employee_working_hours_ajax():
                 type="lowest",
                 name=i['full_name'],
                 percentage=i['percentage'],
-                department=i['department']
+                department=i['department'],
+                hours=i['hours']
             )
         )
     for i in context['highest_working_hours']:
@@ -419,7 +499,8 @@ def get_statistics_employee_working_hours_ajax():
                 type="highest",
                 name=i['full_name'],
                 percentage=i['percentage'],
-                department=i['department']
+                department=i['department'],
+                hours=i['hours']
             )
         )
     EmployeeStatisticsWorkingHours.objects.all().delete()
@@ -450,7 +531,7 @@ def save_importer_csv_to_attendance():
                 if row[2] in card_number_from_database.values():
                     if last_time_visit_datetime_checker:
                         if last_time_visit_datetime_checker.last_updated_time < \
-                                datetime.fromisoformat(f"{row[3]} {row[4]}").replace(tzinfo=utc):
+                                datetime.datetime.fromisoformat(f"{row[3]} {row[4]}").replace(tzinfo=utc):
                             for key, value in card_number_from_database.items():
                                 if value == row[2]:
                                     row.append(key)
@@ -465,7 +546,7 @@ def save_importer_csv_to_attendance():
                 if row[1] in person_id_from_database.values():
                     if last_time_visit_datetime_checker:
                         if last_time_visit_datetime_checker.last_updated_time < \
-                                datetime.fromisoformat(f"{row[3]} {row[4]}").replace(tzinfo=utc):
+                                datetime.datetime.fromisoformat(f"{row[3]} {row[4]}").replace(tzinfo=utc):
                             for key, value in person_id_from_database.items():
                                 if value == row[1]:
                                     row.append(key)
