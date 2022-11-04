@@ -15,6 +15,21 @@ EMPLOYEE_CONDITION_STATUS = (
     ('rejected', 'Отклонено'),
 )
 
+MONTH_LIST = (
+    ("01", 'Январь'),
+    ("02", 'Февраль'),
+    ("03", 'Март'),
+    ("04", 'Апрель'),
+    ("05", 'Май'),
+    ("06", 'Июнь'),
+    ("07", 'Июль'),
+    ("08", 'Август'),
+    ("09", 'Сентябрь'),
+    ("10", 'Октябрь'),
+    ("11", 'Ноябрь'),
+    ("12", 'Декабрь')
+)
+
 """
 When Creating a simple User use manage.py createsuperuser and remove is_superuser is_staff
 """
@@ -249,6 +264,9 @@ class CsvImporter(models.Model):
 
 class DepartmentStatistics(models.Model):
     type = models.CharField(max_length=100, choices=STATISTICS_TYPE)
+    # date = models.DateField(null=True)
+    year = models.IntegerField(null=True)
+    month = models.IntegerField(null=True)
     name = models.CharField(max_length=255)
     percentage = models.IntegerField()
 
@@ -261,6 +279,8 @@ class EmployeeStatisticsAttendance(models.Model):
     name = models.CharField(max_length=255)
     department = models.CharField(max_length=255)
     percentage = models.IntegerField()
+    year = models.IntegerField(null=True)
+    month = models.IntegerField(null=True)
 
     def __str__(self):
         return f"{self.name} | {self.percentage} | {self.type}"
@@ -272,6 +292,8 @@ class EmployeeStatisticsWorkingHours(models.Model):
     department = models.CharField(max_length=255)
     hours = models.IntegerField(null=True)
     percentage = models.IntegerField()
+    year = models.IntegerField(null=True)
+    month = models.IntegerField(null=True)
 
     def __str__(self):
         return f"{self.name} | {self.percentage} | {self.type}"

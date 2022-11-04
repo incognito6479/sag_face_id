@@ -31,14 +31,25 @@
                                 {% csrf_token %}
                                 <div class="col">
                                   <div class="mb-3 row">
-                                    <h5 class="mb-3">
+                                    <h5 class="mb-5">
                                         Дата последнего импортированного объекта:
                                         {{ last_time_visit|default:"Пока нет импортированного объекта" }}
                                     </h5>
                                     <label class="col-sm-3 col-form-label">Импортировать (.csv)</label>
-                                    <div class="col-sm-9">
+                                    <div class="col-sm-6">
                                       <input class="form-control" type="file" name="importer_csv" required>
+                                        <h6 class="text-danger mt-3">
+                                            Пожалуйста, импортируйте данные только за определенный месяц, не смешивайте данные несколько месяцев при импорте.
+                                        </h6>
                                     </div>
+                                      <div class="col-sm-3">
+                                          <select class="form-select" name="month" required>
+                                                <option value="" selected disabled>Месяц</option>
+                                                {% for i in list_of_months %}
+                                                    <option value="{{ i.0 }}">{{ i.1 }}</option>
+                                                {% endfor %}
+                                            </select>
+                                      </div>
                                       <p class="text-danger text-end my-4">{{ file_error }}</p>
                                   </div>
                                 </div>

@@ -26,6 +26,26 @@
           <div class="container-fluid">
             <div class="row project-cards">
               <div class="col-sm-12">
+                <form method="GET" action="#" class="form">
+                    <div class="row mb-3 justify-content-end">
+                        <div class="col-md-4 d-flex">
+                            <select class="form-select" name="year" required>
+                                <option value="" selected disabled>Год</option>
+                                {% for year in list_of_years %}
+                                    <option value="{{ year }}">{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                            <select class="form-select" name="month" required>
+                                <option value="" selected disabled>Месяц</option>
+                                {% for i in list_of_months %}
+                                    <option value="{{ i.0 }}">{{ i.1 }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="submit" value="Поиск" class="btn btn-success ms-3">
+                        </div>
+                    </div>
+                </form>
+              </div>
                 <div class="card">
                   <div class="card-body">
                       <ul class="nav nav-tabs border-tab" id="top-tab" role="tablist">
@@ -47,7 +67,15 @@
                       <div class="tab-content" id="top-tabContent">
                           <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
                               <div class="text-center">
-                                  <h4 class="mb-5">Топ-3 лучших отдела за предыдущий месяц</h4>
+                                  <h4 class="mb-5">
+                                      Топ-3 лучших отдела за:
+                                      {% for i in list_of_months %}
+                                          {% if i.0 == month|slugify %}
+                                              {{ i.1 }}
+                                          {% endif %}
+                                      {% endfor %}
+                                      {{ year }} г.
+                                  </h4>
                               </div>
                               <div class="row">
                                   <div class="col-md-12">
@@ -70,7 +98,7 @@
                                                     {% empty %}
                                                         <tr>
                                                             <th colspan="3" class="text-center">
-                                                                <h5 class="statistics_attendance_highest_no_entry d-none">Нет записи</h5>
+                                                                <h6 class="statistics_attendance_highest_no_entry">Нет записи</h6>
                                                             </th>
                                                         </tr>
                                                 {% endfor %}
@@ -82,7 +110,15 @@
                           </div>
                           <div class="tab-pane fade" id="top-profile" role="tabpanel" aria-labelledby="profile-top-tab">
                               <div class="text-center">
-                                  <h4 class="mb-5">Топ-3 худших отдела за предыдущий месяц</h4>
+                                  <h4 class="mb-5">
+                                      Топ-3 худших отдела за:
+                                      {% for i in list_of_months %}
+                                          {% if i.0 == month|slugify %}
+                                              {{ i.1 }}
+                                          {% endif %}
+                                      {% endfor %}
+                                      {{ year }} г.
+                                  </h4>
                               </div>
                               <div class="row">
                                   <div class="col-md-12">
@@ -105,7 +141,7 @@
                                                     {% empty %}
                                                         <tr>
                                                             <th colspan="3" class="text-center">
-                                                                <h5 class="statistics_attendance_highest_no_entry d-none">Нет записи</h5>
+                                                                <h6 class="statistics_attendance_highest_no_entry">Нет записи</h6>
                                                             </th>
                                                         </tr>
                                                 {% endfor %}
@@ -125,63 +161,5 @@
 
 {% block extra_js %}
     <script>
-        /* $(document).ready(function(){
-            $.ajax({
-                url: ,
-                type: 'POST',
-                headers: {
-                    'X-CSRFToken': csrftoken,
-                    'Access-Control-Allow-Origin': "http://172.30.80.54:8081/"
-                },
-                beforeSend: function() {
-                    let date = new Date()
-                    console.log(date)
-                },
-                complete: function() {
-                    let date = new Date()
-                    console.log(date)
-                },
-                success: function(e) {
-                    let data_json = JSON.parse(e);
-                    let highest_attendance = data_json['highest'];
-                    let lowest_attendance = data_json['lowest'];
-                    if (highest_attendance.length === 0) {
-                        $('.statistics_attendance_highest_no_entry').removeClass('d-none')
-                        $('.statistics_working_hours_lowest_loader').addClass('d-none')
-                    } else {
-                        let template = ``;
-                        for(let key=0; key<highest_attendance.length; key++) {
-                            template += `
-                                <tr>
-                                    <td>${key+1}</td>
-                                    <td>${highest_attendance[key]['name']}</td>
-                                    <td>${highest_attendance[key]['percentage']} %</td>
-                                </tr>
-                            `
-                        }
-                        $('.statistics_attendance_highest_tbody').html(template)
-                    }
-                    if (lowest_attendance.length === 0) {
-                        $('.statistics_attendance_lowest_no_entry').removeClass('d-none')
-                        $('.statistics_working_hours_lowest_loader').addClass('d-none')
-                    } else {
-                        let template = ``;
-                        for(let key=0; key<lowest_attendance.length; key++) {
-                            template += `
-                                <tr>
-                                    <td>${key+1}</td>
-                                    <td>${lowest_attendance[key]['name']}</td>
-                                    <td>${lowest_attendance[key]['percentage']} %</td>
-                                </tr>
-                            `
-                        }
-                        $('.statistics_attendance_lowest_tbody').html(template)
-                    }
-                },
-                error: function(error) {
-                    console.log("Error", error)
-                }
-            });
-        }) */
     </script>
 {% endblock extra_js %}

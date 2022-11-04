@@ -1,7 +1,9 @@
+import calendar
+
 from faceapp.models import Employee, Attendance, CalendarWorkingDays, EmployeeVacation, CsvImporter, \
     EmployeeBusinessTrip, Department, DepartmentShiftTime, DepartmentStatistics, EmployeeStatisticsAttendance, \
     EmployeeStatisticsWorkingHours, EmployeeSickLeave
-from system.settings import SERVER_TIME_DIFFERENCE
+from system.settings import SERVER_TIME_DIFFERENCE, PROGRAM_STARTED_YEAR
 import csv
 import pytz
 import datetime
@@ -10,22 +12,22 @@ from calendar import monthrange, monthcalendar
 utc = pytz.UTC
 
 
-def get_statistics_employee_attendance():
+def get_statistics_employee_attendance(month_to_import):
     employees = Employee.objects.select_related('working_hours').filter(status=True)
     shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
     shift_time_workers_ids = []
     for i in shift_time_workers:
         shift_time_workers_ids.append(i['department_id'])
     employee_percentage_id = {}
-    previous_month = datetime.datetime.now().month - 1
+    # previous_month = datetime.datetime.now().month - 1
     for employee in employees:
         if employee.department_id not in shift_time_workers_ids:
             working_hours = employee.working_hours.end_time.hour - employee.working_hours.start_time.hour
             res = get_attendance_percentage_employee(employee.id)
-            hours_needed_to_work = res['hours_needed_to_work'][previous_month]
+            hours_needed_to_work = res['hours_needed_to_work'][month_to_import]
             overall_percentage_needed = hours_needed_to_work // working_hours
             overall_percentage_worked = 0
-            attendances = res['attendances'].filter(time__month=previous_month)
+            attendances = res['attendances'].filter(time__month=month_to_import)
             for attendance in attendances:
                 if attendance.check_status == "checkIn":
                     check_start_time = find_start_time_difference(working_hours, attendance)
@@ -311,12 +313,13 @@ def find_start_time_difference(user_working_hour, attendance_time):
     return difference
 
 
-def get_statistics_department():
+def get_statistics_department(month_to_import):
     department_obj = Department.objects.all()
     shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
     shift_time_workers_ids = []
     department_id_and_percent = {}
-    previous_month = datetime.datetime.now().month - 1
+    # previous_month = datetime.datetime.now().month - 1
+    # current_month = datetime.datetime.now().month
     for i in shift_time_workers:
         shift_time_workers_ids.append(i['department_id'])
     for i in department_obj:
@@ -325,7 +328,7 @@ def get_statistics_department():
             if len(res) == 0:
                 department_id_and_percent[i.id] = 0
             else:
-                department_id_and_percent[i.id] = res[previous_month]
+                department_id_and_percent[i.id] = res[month_to_import]
     department_id_and_percent = {k: v for k, v in sorted(department_id_and_percent.items(), key=lambda item: item[1])}
     if len(department_id_and_percent) % 2 == 0:
         department_id_and_percent[len(department_id_and_percent) // 2] = 0
@@ -359,6 +362,8 @@ def get_statistics_department():
             DepartmentStatistics(
                 type="lowest",
                 name=i['name'],
+                year=datetime.datetime.now().year,
+                month=month_to_import,
                 percentage=i['percentage']
             )
         )
@@ -367,16 +372,19 @@ def get_statistics_department():
             DepartmentStatistics(
                 type="highest",
                 name=i['name'],
+                year=datetime.datetime.now().year,
+                month=month_to_import,
                 percentage=i['percentage']
             )
         )
-    DepartmentStatistics.objects.all().delete()
+    # DepartmentStatistics.objects.all().delete()
     DepartmentStatistics.objects.bulk_create(department_bulk_create)
     return context
 
 
-def get_statistics_employee_attendance_ajax():
-    res = get_statistics_employee_attendance()
+def get_statistics_employee_attendance_ajax(month_to_import):
+    res = get_statistics_employee_attendance(month_to_import)
+    employee_obj = Employee.objects.select_related('department').filter(status=True)
     res = {k: v for k, v in sorted(res.items(), key=lambda item: item[1])}
     if len(res) % 2 == 0:
         res[len(res) // 2] = 0
@@ -393,11 +401,11 @@ def get_statistics_employee_attendance_ajax():
     lowest_dict = []
     highest_dict = []
     for key, value in lowest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
+        for i in employee_obj:
             if int(key) == int(i.id):
                 lowest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
     for key, value in highest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
+        for i in employee_obj:
             if int(key) == int(i.id):
                 highest_dict.append({'percentage': value, 'full_name': i.full_name, 'department': i.department.name})
     highest_dict.reverse()
@@ -412,6 +420,8 @@ def get_statistics_employee_attendance_ajax():
                 type="lowest",
                 name=i['full_name'],
                 percentage=i['percentage'],
+                year=datetime.datetime.now().year,
+                month=month_to_import,
                 department=i['department']
             )
         )
@@ -421,27 +431,29 @@ def get_statistics_employee_attendance_ajax():
                 type="highest",
                 name=i['full_name'],
                 percentage=i['percentage'],
+                year=datetime.datetime.now().year,
+                month=month_to_import,
                 department=i['department']
             )
         )
-    EmployeeStatisticsAttendance.objects.all().delete()
+    # EmployeeStatisticsAttendance.objects.all().delete()
     EmployeeStatisticsAttendance.objects.bulk_create(attendance_employee_bulk_create)
     return context
 
 
-def get_statistics_employee_working_hours_ajax():
-    employee_obj = Employee.objects.filter(status=True)
+def get_statistics_employee_working_hours_ajax(month_to_import):
+    employee_obj = Employee.objects.select_related('department').filter(status=True)
     shift_time_workers = DepartmentShiftTime.objects.all().values('department_id')
     shift_time_workers_ids = []
     for i in shift_time_workers:
         shift_time_workers_ids.append(i['department_id'])
-    previous_month = datetime.datetime.now().month - 1
+    # previous_month = datetime.datetime.now().month - 1
     employee_percent_dict = {}
     for i in employee_obj:
         if i.department_id not in shift_time_workers_ids:
             resp = get_attendance_percentage_employee(i.id)
-            employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][previous_month])] = \
-                resp['percent'][previous_month]
+            employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][month_to_import])] = \
+                resp['percent'][month_to_import]
     # resp = get_attendance_percentage_employee(2)
     # employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][previous_month])] = \
     #     resp['percent'][previous_month]
@@ -454,6 +466,10 @@ def get_statistics_employee_working_hours_ajax():
     middle_key = len(employee_percent_dict) // 2
     key_counter = 0
     for key, value in employee_percent_dict.items():
+        try:
+            key[0]
+        except:
+            key = (key, 0)
         if key_counter >= middle_key:
             highest[key] = value
         else:
@@ -462,7 +478,7 @@ def get_statistics_employee_working_hours_ajax():
     lowest_dict = []
     highest_dict = []
     for key, value in lowest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
+        for i in employee_obj:
             if int(key[0]) == int(i.id):
                 lowest_dict.append({'percentage': value,
                                     'full_name': i.full_name,
@@ -470,7 +486,7 @@ def get_statistics_employee_working_hours_ajax():
                                     'hours': key[1]
                                     })
     for key, value in highest.items():
-        for i in Employee.objects.select_related('department').filter(status=True):
+        for i in employee_obj:
             if int(key[0]) == int(i.id):
                 highest_dict.append({'percentage': value,
                                      'full_name': i.full_name,
@@ -490,6 +506,8 @@ def get_statistics_employee_working_hours_ajax():
                 name=i['full_name'],
                 percentage=i['percentage'],
                 department=i['department'],
+                year=datetime.datetime.now().year,
+                month=month_to_import,
                 hours=i['hours']
             )
         )
@@ -500,15 +518,17 @@ def get_statistics_employee_working_hours_ajax():
                 name=i['full_name'],
                 percentage=i['percentage'],
                 department=i['department'],
+                year=datetime.datetime.now().year,
+                month=month_to_import,
                 hours=i['hours']
             )
         )
-    EmployeeStatisticsWorkingHours.objects.all().delete()
+    # EmployeeStatisticsWorkingHours.objects.all().delete()
     EmployeeStatisticsWorkingHours.objects.bulk_create(working_hours_bulk_create)
     return context
 
 
-def save_importer_csv_to_attendance():
+def save_importer_csv_to_attendance(month_to_import):
     print('helpers started')
     csv_file = open('media/attendance/importer.csv')
     csv_reader = csv.reader(csv_file)
@@ -573,8 +593,30 @@ def save_importer_csv_to_attendance():
             pass
     if attendance_bulk_create:
         Attendance.objects.bulk_create(attendance_bulk_create)
-    get_statistics_department()
-    get_statistics_employee_attendance_ajax()
-    get_statistics_employee_working_hours_ajax()
+    last_time_percent_calculate = DepartmentStatistics.objects.all().order_by('-year', '-month')
+    if not last_time_percent_calculate:
+        get_statistics_department(month_to_import)
+        get_statistics_employee_attendance_ajax(month_to_import)
+        get_statistics_employee_working_hours_ajax(month_to_import)
+    else:
+        day_from_row = 0
+        if f"{rows[-1][3][-2]}" == "0":
+            day_from_row = f"{rows[-1][3][-1]}"
+        else:
+            day_from_row = f"{rows[-1][3][-2]}{rows[-1][3][-1]}"
+        compare_day = calendar.monthrange(datetime.datetime.now().year, month_to_import)[1]
+        if int(last_time_percent_calculate[0].month) < month_to_import and compare_day == int(day_from_row):
+            print("Calculating statistics")
+            get_statistics_department(month_to_import)
+            get_statistics_employee_attendance_ajax(month_to_import)
+            get_statistics_employee_working_hours_ajax(month_to_import)
     print('helpers ended')
     return
+
+
+def dry_list_of_years():
+    current_year = datetime.datetime.now().year
+    list_of_years = [PROGRAM_STARTED_YEAR]
+    for i in range(1, (current_year - PROGRAM_STARTED_YEAR) + 1):
+        list_of_years.append(PROGRAM_STARTED_YEAR + i)
+    return list_of_years

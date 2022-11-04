@@ -13,15 +13,18 @@ from datetime import datetime, timedelta
 
 from faceapp.forms import EmployeeModelForm, VacationModelForm, SickLeaveModelForm, BusinessTripModelForm
 from faceapp.helpers import get_employee_detail_attendances, get_all_employees_attendances, \
-    get_attendance_percentage_employee, get_attendance_percentage_department, get_statistics_employee_working_hours_ajax
+    get_attendance_percentage_employee, get_attendance_percentage_department, \
+    get_statistics_employee_working_hours_ajax, dry_list_of_years
 from faceapp.models import Attendance, Employee, Department, DepartmentShiftTime, CalendarWorkingDays, \
     EmployeeVacation, CsvImporter, EmployeeBusinessTrip, DepartmentStatistics, EmployeeStatisticsAttendance, \
-    EmployeeStatisticsWorkingHours, EmployeeSickLeave, User
+    EmployeeStatisticsWorkingHours, EmployeeSickLeave, User, MONTH_LIST
 from faceapp.tasks import importer_attendance
 import os
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+
+from system.settings import PROGRAM_STARTED_YEAR
 
 
 class BusinessTripDeleteView(LoginRequiredMixin, DeleteView):
@@ -293,12 +296,22 @@ class StatisticsEmployeeTemplateView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(StatisticsEmployeeTemplateView, self).get_context_data(**kwargs)
-        emp_att = EmployeeStatisticsAttendance.objects.all()
-        empl_wh = EmployeeStatisticsWorkingHours.objects.all()
+        year = self.request.GET.get('year', None)
+        month = self.request.GET.get('month', None)
+        if not year:
+            year = datetime.now().year
+        if not month:
+            month = datetime.now().month
+        emp_att = EmployeeStatisticsAttendance.objects.filter(year=year, month=month)
+        empl_wh = EmployeeStatisticsWorkingHours.objects.filter(year=year, month=month)
         context['attendances_h'] = emp_att.filter(type="highest").order_by('-percentage')
         context['attendances_l'] = emp_att.filter(type="lowest").order_by('percentage')
         context['working_hours_h'] = empl_wh.filter(type="highest").order_by('-hours')
         context['working_hours_l'] = empl_wh.filter(type="lowest").order_by('percentage')
+        context['list_of_years'] = dry_list_of_years()
+        context['list_of_months'] = MONTH_LIST
+        context['month'] = month
+        context['year'] = year
         return context
 
 
@@ -308,9 +321,21 @@ class StatisticsDepartmentTemplateView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(StatisticsDepartmentTemplateView, self).get_context_data(**kwargs)
-        dep_percentage = DepartmentStatistics.objects.all()
+        year = self.request.GET.get('year', None)
+        month = self.request.GET.get('month', None)
+        if not year:
+            year = datetime.now().year
+        if not month:
+            month = datetime.now().month
+        # dep_percentage = DepartmentStatistics.objects.all()
+        dep_percentage = DepartmentStatistics.objects.filter(year=year, month=month)
         context['department_statistics_h'] = dep_percentage.filter(type="highest").order_by('-percentage')
         context['department_statistics_l'] = dep_percentage.filter(type="lowest").order_by('percentage')
+        context['list_of_years'] = dry_list_of_years()
+        context['list_of_months'] = MONTH_LIST
+        context['month'] = month
+        context['year'] = year
+        # print(datetime.today())
         return context
 
 
@@ -594,7 +619,8 @@ class ImporterView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if last_updated_time:
             last_updated_time = last_updated_time.last().last_updated_time
         context = {
-            'last_time_visit': last_updated_time
+            'last_time_visit': last_updated_time,
+            'list_of_months': MONTH_LIST,
         }
         return render(request, 'templates/importer.html', context)
 
@@ -609,7 +635,9 @@ class ImporterView(LoginRequiredMixin, PermissionRequiredMixin, View):
             os.remove("media/attendance/importer.csv")
         os.path.join(settings.MEDIA_ROOT, default_storage.save('attendance/importer.csv', ContentFile(file.read())))
         print('IMPORTER STARTED')
-        importer_attendance.delay()
+        month_to_import = self.request.POST.get('month')
+        importer_attendance.delay(int(month_to_import))
+        # importer_attendance(int(month_to_import))
         print('IMPORTER ENDED')
         last_updated_time = CsvImporter.objects.all().order_by('id')
         if last_updated_time:
