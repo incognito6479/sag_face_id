@@ -4,7 +4,8 @@ from faceapp.views import LoginView, HomeView, LogoutView, DepartmentListView, D
     ImporterView, ShiftTimeWorkers, CalendarListView, VacationListView, get_department_percentage_for_view, \
     BusinessTripView, StatisticsEmployeeTemplateView, StatisticsDepartmentTemplateView, vacation_add_func, \
     EmployeeSickLeaveView, EmployeeCreateView, EmployeeUpdateView, EmployeeDeleteView, VacationUpdateView, \
-    VacationDeleteView, SickLeaveUpdateView, SickLeaveDeleteView, BusinessTripUpdateView, BusinessTripDeleteView
+    VacationDeleteView, SickLeaveUpdateView, SickLeaveDeleteView, BusinessTripUpdateView, BusinessTripDeleteView, \
+    status_action
 
 urlpatterns = [
     path('admin/', admin.site.urls, name="django_admin_url"),
@@ -12,6 +13,7 @@ urlpatterns = [
     path('logout', LogoutView.as_view(), name='logout_view'),
     path('', HomeView.as_view(), name='home_view'),
     path('importer/', ImporterView.as_view(), name='importer_view'),
+    path('status_action/', status_action, name='status_action'),
     path('vacation_view/', VacationListView.as_view(), name='vacation_view'),
     path('sick_leave_view/', EmployeeSickLeaveView.as_view(), name='sick_leave_view'),
     path('sick_leave_update_view/<int:pk>/', SickLeaveUpdateView.as_view(), name='sick_leave_update_view'),

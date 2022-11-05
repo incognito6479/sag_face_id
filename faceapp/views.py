@@ -285,7 +285,8 @@ class EmployeeSickLeaveView(LoginRequiredMixin, View):
             date_from=datetime.fromisoformat(self.request.POST.get('date_from')),
             date_to=datetime.fromisoformat(self.request.POST.get('date_to')),
             employee_id=employee_id,
-            comment=self.request.POST.get('comment')
+            comment=self.request.POST.get('comment'),
+            status=status
         )
         return redirect('sick_leave_view')
 
@@ -654,3 +655,21 @@ def get_department_percentage_for_view(request):
     data_json = json.loads(request.body)
     resp = get_attendance_percentage_department(data_json['department_id'])
     return HttpResponse(json.dumps(resp))
+
+
+def status_action(request):
+    if request.method == "POST":
+        redirect_url = ""
+        status = request.POST.get('status')
+        obj_id = request.POST.get('id')
+        if request.POST.get('action') == "sick_leave":
+            redirect_url = "sick_leave_view"
+            EmployeeSickLeave.objects.filter(id=obj_id).update(status=status)
+        elif request.POST.get('action') == "vacation":
+            redirect_url = "vacation_view"
+            EmployeeVacation.objects.filter(id=obj_id).update(status=status)
+        elif request.POST.get('action') == "trip":
+            redirect_url = "business_trip_view"
+            EmployeeBusinessTrip.objects.filter(id=obj_id).update(status=status)
+        return redirect(redirect_url)
+    return PermissionDenied()

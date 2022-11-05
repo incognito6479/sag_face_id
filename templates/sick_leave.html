@@ -93,7 +93,7 @@
                                             <td>{{ i.date_from|default:"-" }}</td>
                                             <td>{{ i.date_to|default:"-" }}</td>
                                             <td>{{ i.difference|default:"-" }}</td>
-                                            <td>
+                                            <td class="d-flex">
                                                 <button class="btn btn-sm
                                                     {% if i.status == 'waiting' %}
                                                         btn-warning
@@ -104,6 +104,26 @@
                                                     {% endif %}">
                                                     {{ i.get_status_display|default:"-" }}
                                                 </button>
+                                                    {% if i.status == 'waiting' %}
+                                                        <form action="{% url 'status_action' %}" method="POST" class="p-0 m-1">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" value="sick_leave" name="action">
+                                                            <input type="hidden" value="{{ i.id }}" name="id">
+                                                            <input type="hidden" value="accept" name="status">
+                                                            <button type="submit"  class="btn btn-success p-1 ms-2">
+                                                                <i title="Принять" class="fa fa-check"></i>
+                                                            </button>
+                                                        </form>
+                                                        <form action="{% url 'status_action' %}" method="POST" class="p-0 m-1">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" value="sick_leave" name="action">
+                                                            <input type="hidden" value="{{ i.id }}" name="id">
+                                                            <input type="hidden" value="rejected" name="status">
+                                                            <button type="submit"  class="btn btn-danger p-1">
+                                                                <i title="Отменить" class="fa-regular fa-circle-xmark"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
                                             </td>
                                             <td>{{ i.comment|default:"-" }}</td>
                                             {% if request.user.is_staff %}
