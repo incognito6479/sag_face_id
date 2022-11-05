@@ -571,6 +571,7 @@ class HomeView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(HomeView, self).get_context_data(**kwargs)
+        # get_statistics_employee_working_hours_ajax(10)
         context['departments'] = Department.objects.all()
         context['employee_count'] = Employee.objects.filter(status=True).count()
         if self.request.GET.get('name'):

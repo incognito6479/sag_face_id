@@ -454,10 +454,6 @@ def get_statistics_employee_working_hours_ajax(month_to_import):
             resp = get_attendance_percentage_employee(i.id)
             employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][month_to_import])] = \
                 resp['percent'][month_to_import]
-    # resp = get_attendance_percentage_employee(2)
-    # employee_percent_dict[(resp['employee_id'], resp['employee_worked_hours'][previous_month])] = \
-    #     resp['percent'][previous_month]
-    # print(employee_percent_dict)
     employee_percent_dict = {k: v for k, v in sorted(employee_percent_dict.items(), key=lambda item: item[1])}
     if len(employee_percent_dict) % 2 == 0:
         employee_percent_dict[len(employee_percent_dict) // 2] = 0
@@ -487,7 +483,7 @@ def get_statistics_employee_working_hours_ajax(month_to_import):
                                     })
     for key, value in highest.items():
         for i in employee_obj:
-            if int(key[0]) == int(i.id):
+            if int(key[0]) == int(i.id) and value != 0:
                 highest_dict.append({'percentage': value,
                                      'full_name': i.full_name,
                                      'department': i.department.name,
@@ -606,7 +602,6 @@ def save_importer_csv_to_attendance(month_to_import):
             day_from_row = f"{rows[-1][3][-2]}{rows[-1][3][-1]}"
         compare_day = calendar.monthrange(datetime.datetime.now().year, month_to_import)[1]
         if int(last_time_percent_calculate[0].month) < month_to_import and compare_day == int(day_from_row):
-            print("Calculating statistics")
             get_statistics_department(month_to_import)
             get_statistics_employee_attendance_ajax(month_to_import)
             get_statistics_employee_working_hours_ajax(month_to_import)
